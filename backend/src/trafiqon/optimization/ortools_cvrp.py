@@ -41,6 +41,7 @@ STATUS_NAMES = {v: k for k, v in routing_enums_pb2.RoutingSearchStatus.Value.ite
 
 class OrToolsCvrp:
     id = "ortools_cvrp"
+    uses_seed = False
     version = "1"
     defaults: Mapping[str, Any] = {
         "time_limit_s": 2.0,

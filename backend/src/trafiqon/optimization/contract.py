@@ -123,6 +123,8 @@ class ConfigError(ValueError):
 class Algorithm(Protocol):
     id: str
     version: str
+    uses_seed: bool
+    defaults: Mapping[str, Any]
 
     def resolve_config(self, config: Mapping[str, Any]) -> dict[str, Any]:
         """Merge with defaults and validate; raise ConfigError on bad input."""

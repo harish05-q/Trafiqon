@@ -3,7 +3,7 @@
 Update this file at the end of every work session. It is the source of truth after a context reset.
 
 ## Current milestone
-M3 done (2026-10-28), not yet committed (M2 is commit 9f09a97). Next: M4 (persistence, API, worker). Needs Postgres for the SKIP LOCKED integration tests: start Docker Desktop or approve a local Postgres 18 cluster.
+M4 done (2026-10-28), not yet committed (M3 is commit 7a30740). Next: M5 (frontend foundation + design system). Postgres runs via `docker compose up -d db` (Docker Desktop must be running).
 
 ## Milestones
 | # | Name | State | Acceptance criteria met |
@@ -13,7 +13,7 @@ M3 done (2026-10-28), not yet committed (M2 is commit 9f09a97). Next: M4 (persis
 | 1.5 | Thin vertical slice (D2) | done | API + TestClient tests, Vitest, drawn path == API path checked in browser (2026-10-28) |
 | 2 | OR-Tools + SA + common interface | done | Contract, OR-Tools, SA, evaluator parity, determinism, cancellation, infeasible handling, baseline experiments + CSV/JSON; 165 tests (2026-10-28) |
 | 3 | QPSO-inspired optimizer | done | Math written first (docs/algorithms.md); encode/decode/update/repair/LS tests, determinism, cancellation, evaluator parity, measured ablation, limitations; 205 tests (2026-10-28) |
-| 4 | Persistence, API, worker | todo | |
+| 4 | Persistence, API, worker | done | Alembic from clean DB, immutable versions (DB trigger), runs/results/events/suites, Postgres SKIP LOCKED queue + worker process, SSE, cancel, idempotency, recovery; 60 integration tests on real Postgres 18.6 (2026-10-28) |
 | 5 | Frontend foundation + design system | todo | |
 | 6 | Four workspaces end to end | todo | |
 | 7 | Simulation + replanning | todo | |
@@ -45,6 +45,10 @@ M3 done (2026-10-28), not yet committed (M2 is commit 9f09a97). Next: M4 (persis
 - D12 (2026-10-28): Budgets differ by design: OR-Tools by wall time, SA by iterations (deterministic per seed); both wall times are recorded. Gap reference = proven optimum if any, else best observed heuristic, labelled. See docs/benchmark_methodology.md.
 - D13 (2026-10-28): QPSO hybrid (`qpso_hybrid` v1) = canonical QPSO position update (mean-best attractor, linear beta 1.0 -> 0.5) on 2n continuous random keys (assignment floor-map + order keys), deterministic decode, two-phase repair, first-improvement relocate/swap/2-opt local search, Lamarckian write-back via exact inverse encoding. Documented as QPSO-inspired, not canonical QPSO; no quantum claims. `update_rule: "uniform_resample"` exists only as a labelled ablation baseline.
 - D14 (2026-10-28): `RoutingProblem` keeps plain-list copies of the matrix/locations/demands for speed (route_cost is the hot loop). Added `fixtures.builtin.experimental_grid` as a seeded larger-experimental synthetic instance (not a UI built-in).
+- D15 (2026-10-28): M4 design. The run row is the queue entry (enqueue = INSERT QUEUED in the API transaction). Claim via `UPDATE ... WHERE id = (SELECT ... FOR UPDATE SKIP LOCKED LIMIT 1)`. All transitions are conditional UPDATEs, ownership-checked by `worker_id`. complete() = status + result insert in one tx, and a CANCELLING run (or a cancelled algorithm) ends CANCELLED. Retry only on worker loss (stale heartbeat), bounded by max_attempts=2; algorithm exceptions are FAILED and not retried. At-least-once delivery; exactly-once NOT claimed. One run per worker process.
+- D16 (2026-10-28): Benchmark suites are sets of ordinary runs (suite_id FK) created in one transaction; comparison/export are computed from stored COMPLETED results only (cancelled/failed/unfinished counted, never imputed). Experiment API = /suites.
+- D17 (2026-10-28): Scenario versions are immutable via a Postgres BEFORE UPDATE trigger; deleting a scenario is refused (409) if any run or suite references its versions. `owner_id` columns are present but unused (auth-ready boundary). Algorithms gained `uses_seed`; the API generates and records a seed before execution for seeded algorithms.
+- D18 (2026-10-28): SSE polls `run_events` (0.5 s) through the threadpool; reads run status BEFORE events so a terminal status always comes with its final events (a race found and fixed by test). Progress events are throttled and capped per run; the latest summary is on the run row; old progress events of finished runs are pruned.
 - D4 (2026-10-28): Docker Compose uses `postgres:18`, matching the locally installed PostgreSQL 18.1 binaries. Worker uses sync SQLAlchemy/psycopg to avoid Windows asyncio event-loop issues with psycopg async.
 
 ## Assumptions and risks
@@ -98,7 +102,18 @@ M3 done (2026-10-28), not yet committed (M2 is commit 9f09a97). Next: M4 (persis
 - `uv run python -m trafiqon.experiments.baseline --seeds 5 --out results/baseline`: all three algorithms 5/5 feasible on all three built-ins; QPSO mean equals the reference on each (73.800 / 60.792 / 55.153) at 1.25 / 0.48 / 1.34 s; OR-Tools 1.00 s; SA 0.14-0.16 s, SA mean 74.920 on congested_city.
 - One-off timing on experimental_grid_s0_n30, seed 0: QPSO 15x30 with LS 211.679 (5.02 s); SA default 211.826 (0.2 s); OR-Tools 2 s 218.515.
 
+2026-10-28 (M4):
+- `uv add sqlalchemy alembic "psycopg[binary]"` -> sqlalchemy 2.1.6, alembic 1.20.1, psycopg 3.3.6.
+- `docker compose up -d db` -> postgres:18 container healthy (PostgreSQL 18.6).
+- `alembic upgrade head`, `alembic check` -> "No new upgrade operations detected"; `alembic downgrade base` + `upgrade head` OK.
+- `cd backend && uv run pytest` -> `265 passed in 110.00s` (205 unit + 60 integration on real Postgres; the session drops/recreates the schema and migrates from clean; the test DB is auto-created).
+- With an unreachable DB URL the integration tests report `SKIPPED ... integration tests NOT RUN` (checked).
+- `uv run ruff check .` -> `All checks passed!`; `ruff format --check .` -> `63 files already formatted`.
+- First integration run: 4 failures were wrong test expectations (server limits correctly rejected configs); 1 real bug: SSE could end before sending final events (read order); fixed, then the test passed 5/5 reruns.
+- Manual e2e with separate processes (uvicorn :8001 + `python -m trafiqon.worker.main --migrate`): created scenario from congested_city, submitted qpso_hybrid (iterations 40, seed 5); SSE showed queued, started, 2x progress, completed, end; run COMPLETED attempt 1, objective 73.8, feasible, 1.07 s.
+
 ## Known defects and open items
+- M4: no simulation API yet (M7). No per-client rate limiting; job submission is bounded by the queued-run limit only. SSE uses DB polling (fine for one node). The frontend still uses only the built-in endpoints (M5/M6 connect it). Compose has only the `db` service (api/worker/web in M8). No CI yet (M8).
 - M3: local search dominates QPSO runtime (about 5 s on 30 customers); not faster than SA there. Only one larger-experimental instance has been measured.
 - M2: the small fixtures are easy (both methods tie on 2 of 3); larger experimental scenarios are needed before comparisons mean much (M8). No exact/lower-bound method yet, so every gap is vs a heuristic reference. Not yet in the API (runs/worker arrive in M4).
 - Slice UI is minimal: fixed-width side panels (cramped below ~1000px), no light theme, no keyboard path selection on the canvas (selects work via keyboard). M5 replaces it with the real shell.

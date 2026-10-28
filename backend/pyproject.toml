@@ -8,9 +8,12 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.20.1",
     "fastapi>=0.162.0",
     "numpy>=2.1",
     "ortools>=9.15.6755",
+    "psycopg[binary]>=3.3.6",
+    "sqlalchemy>=2",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -36,5 +39,10 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["tests"]
+markers = ["integration: needs a real PostgreSQL (TRAFIQON_TEST_DATABASE_URL); skipped if unreachable"]
 addopts = "-q"
 filterwarnings = ["ignore:builtin type .* has no __module__ attribute:DeprecationWarning"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI dependency/parameter markers are designed to be used as argument defaults.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Header"]

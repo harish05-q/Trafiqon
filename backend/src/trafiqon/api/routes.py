@@ -1,17 +1,12 @@
-"""/api/v1 routes for the M1.5 slice: health, built-in scenarios, shortest path.
-
-Built-in scenarios only; persisted scenarios and versions arrive with M4.
-"""
+"""/api/v1 routes that need no database: built-in scenarios and shortest paths."""
 
 from __future__ import annotations
 
 from fastapi import APIRouter
 
-from trafiqon import __version__
 from trafiqon.api.errors import ApiError
 from trafiqon.api.schemas import (
     ErrorResponse,
-    HealthResponse,
     PathOut,
     ScenarioOut,
     ScenarioSummary,
@@ -32,16 +27,6 @@ def _get_builtin(scenario_id: str) -> Scenario:
     if scenario_id not in BUILTIN_SCENARIOS:
         raise ApiError(404, "scenario_not_found", f"unknown built-in scenario {scenario_id!r}")
     return load_builtin(scenario_id)
-
-
-@router.get("/health", response_model=HealthResponse)
-def health() -> HealthResponse:
-    return HealthResponse(
-        status="ok",
-        version=__version__,
-        api_version="v1",
-        dependencies={"database": {"status": "not_configured"}},
-    )
 
 
 @router.get("/scenarios/builtin", response_model=list[ScenarioSummary])

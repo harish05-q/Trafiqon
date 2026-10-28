@@ -71,6 +71,7 @@ class _State:
 
 class SimulatedAnnealing:
     id = "simulated_annealing"
+    uses_seed = True
     version = "1"
     defaults: Mapping[str, Any] = {
         "max_iterations": 20_000,

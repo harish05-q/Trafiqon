@@ -55,14 +55,16 @@ Adapt to the existing repo, but keep these logical boundaries.
 | 8 Hardening + docs | `docs/SPEC.md` sections 7, 9 |
 
 ## Commands (fill in as they are established)
-- Backend test: `cd backend && uv run pytest`
+- Backend test: `cd backend && uv run pytest` (integration tests need Postgres: `docker compose up -d db` and `trafiqon_test` DB; they skip, i.e. NOT RUN, if unreachable)
+- Migrations: `cd backend && TRAFIQON_DATABASE_URL=... uv run alembic upgrade head`
 - Backend lint: `cd backend && uv run ruff check . && uv run ruff format --check .`
 - Frontend test: `cd frontend && npm test`
 - Frontend lint/build: `cd frontend && npm run lint && npm run build`
-- API dev server: `cd backend && uv run uvicorn trafiqon.api.app:app --port 8000`
+- API dev server: `cd backend && TRAFIQON_DATABASE_URL=... uv run uvicorn trafiqon.api.app:app --port 8000`
+- Worker: `cd backend && TRAFIQON_DATABASE_URL=... uv run python -m trafiqon.worker.main [--migrate]`
 - Web dev server: `cd frontend && npm run dev` (API URL from `NEXT_PUBLIC_API_BASE_URL`, default http://localhost:8000)
 - E2E: `cd frontend && npx playwright test`
-- Stack: `docker compose up`
+- Stack: `docker compose up` (M4: `db` service only; api/worker/web services come in M8)
 
 ## End-of-milestone report format
 Implemented / commands actually run / actual results / known defects / decisions / next milestone + acceptance criteria.

@@ -85,6 +85,7 @@ def clip(x: list[float], n: int, n_vehicles: int) -> list[float]:
 
 class QpsoHybrid:
     id = "qpso_hybrid"
+    uses_seed = True
     version = "1"
     defaults: Mapping[str, Any] = {
         "swarm_size": 20,
