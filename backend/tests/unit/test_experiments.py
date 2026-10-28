@@ -100,6 +100,8 @@ def test_baseline_cli_writes_exports(tmp_path, capsys):
             "0.2",
             "--sa-iterations",
             "500",
+            "--qpso-iterations",
+            "2",
             "--out",
             str(tmp_path),
         ]
@@ -107,3 +109,20 @@ def test_baseline_cli_writes_exports(tmp_path, capsys):
     assert (tmp_path / "urban_grid.json").exists()
     assert (tmp_path / "urban_grid.csv").exists()
     assert "best_observed_heuristic" in capsys.readouterr().out
+
+
+def test_ablation_specs_hold_everything_but_the_update_rule_equal():
+    from trafiqon.experiments.ablation_qpso import specs
+
+    by_label = {s.label: s.config for s in specs(ls_iterations=3, no_ls_iterations=4)}
+    assert set(by_label) == {
+        "qpso/no-ls",
+        "uniform_resample/no-ls",
+        "qpso/ls",
+        "uniform_resample/ls",
+    }
+    for mode in ("no-ls", "ls"):
+        q, a = by_label[f"qpso/{mode}"], by_label[f"uniform_resample/{mode}"]
+        assert {k: v for k, v in q.items() if k != "update_rule"} == {
+            k: v for k, v in a.items() if k != "update_rule"
+        }

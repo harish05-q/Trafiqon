@@ -3,7 +3,7 @@
 Update this file at the end of every work session. It is the source of truth after a context reset.
 
 ## Current milestone
-M2 done (2026-10-28), not yet committed (M1.5 is commit 1c265e3). Next: M3 (QPSO-inspired optimizer; write docs/algorithms.md section first).
+M3 done (2026-10-28), not yet committed (M2 is commit 9f09a97). Next: M4 (persistence, API, worker). Needs Postgres for the SKIP LOCKED integration tests: start Docker Desktop or approve a local Postgres 18 cluster.
 
 ## Milestones
 | # | Name | State | Acceptance criteria met |
@@ -12,7 +12,7 @@ M2 done (2026-10-28), not yet committed (M1.5 is commit 1c265e3). Next: M3 (QPSO
 | 1 | Domain + routing (Dijkstra, A*) | done | All M1 criteria below; 93 tests, ruff clean (2026-10-28) |
 | 1.5 | Thin vertical slice (D2) | done | API + TestClient tests, Vitest, drawn path == API path checked in browser (2026-10-28) |
 | 2 | OR-Tools + SA + common interface | done | Contract, OR-Tools, SA, evaluator parity, determinism, cancellation, infeasible handling, baseline experiments + CSV/JSON; 165 tests (2026-10-28) |
-| 3 | QPSO-inspired optimizer | todo | |
+| 3 | QPSO-inspired optimizer | done | Math written first (docs/algorithms.md); encode/decode/update/repair/LS tests, determinism, cancellation, evaluator parity, measured ablation, limitations; 205 tests (2026-10-28) |
 | 4 | Persistence, API, worker | todo | |
 | 5 | Frontend foundation + design system | todo | |
 | 6 | Four workspaces end to end | todo | |
@@ -43,6 +43,8 @@ M2 done (2026-10-28), not yet committed (M1.5 is commit 1c265e3). Next: M3 (QPSO
 - D10 (2026-10-28): SA handles capacity with an explicit penalty term (lambda x overload, default 2 x longest leg) so it can cross infeasible states; only overload-free states become the incumbent and the reported objective is pure travel time. Unreachable legs are hard-rejected.
 - D11 (2026-10-28): OR-Tools: unreachable arcs removed from NextVar domains (no big-M); multiple allowed end depots via per-vehicle dummy end nodes; integer cost scale 1000/min; `proven_optimal` only on ROUTING_OPTIMAL (w.r.t. scaled costs). No seed, not deterministic under a time limit (recorded). Optional exact small-instance method NOT implemented (SPEC_FULL 7.3 marks it optional).
 - D12 (2026-10-28): Budgets differ by design: OR-Tools by wall time, SA by iterations (deterministic per seed); both wall times are recorded. Gap reference = proven optimum if any, else best observed heuristic, labelled. See docs/benchmark_methodology.md.
+- D13 (2026-10-28): QPSO hybrid (`qpso_hybrid` v1) = canonical QPSO position update (mean-best attractor, linear beta 1.0 -> 0.5) on 2n continuous random keys (assignment floor-map + order keys), deterministic decode, two-phase repair, first-improvement relocate/swap/2-opt local search, Lamarckian write-back via exact inverse encoding. Documented as QPSO-inspired, not canonical QPSO; no quantum claims. `update_rule: "uniform_resample"` exists only as a labelled ablation baseline.
+- D14 (2026-10-28): `RoutingProblem` keeps plain-list copies of the matrix/locations/demands for speed (route_cost is the hot loop). Added `fixtures.builtin.experimental_grid` as a seeded larger-experimental synthetic instance (not a UI built-in).
 - D4 (2026-10-28): Docker Compose uses `postgres:18`, matching the locally installed PostgreSQL 18.1 binaries. Worker uses sync SQLAlchemy/psycopg to avoid Windows asyncio event-loop issues with psycopg async.
 
 ## Assumptions and risks
@@ -87,7 +89,17 @@ M2 done (2026-10-28), not yet committed (M1.5 is commit 1c265e3). Next: M3 (QPSO
   - incident_response: ref 60.792. OR-Tools mean 60.792 (1.00 s); SA mean 60.792, std 0 (0.21 s).
   - urban_grid: ref 55.153. OR-Tools mean 55.153 (1.00 s); SA mean 55.153, std 0 (0.27 s).
 
+2026-10-28 (M3):
+- `cd backend && uv run pytest` -> `205 passed in 10.29s`. `uv run ruff check .` -> `All checks passed!`; format check clean.
+- `uv run python -m trafiqon.experiments.ablation_qpso --seeds 5 --out results/ablation` (measured; gap vs best observed heuristic):
+  - congested_city: qpso/no-ls mean 74.660 (gap 1.17 %, 0.11 s); resample/no-ls 77.800 (5.42 %); qpso/ls 73.800 (0.00 %, 0.29 s); resample/ls 73.800 (0.00 %, 0.55 s).
+  - experimental_grid_s0_n30: qpso/no-ls 261.664 (23.61 %, std 8.36); resample/no-ls 277.139 (30.92 %, std 9.49); qpso/ls 211.758 (0.04 %, 5.29 s); resample/ls 212.934 (0.59 %, 5.81 s).
+  - QPSO <= resample on mean in all 4 settings (tie on congested_city/ls). n=5, no significance test.
+- `uv run python -m trafiqon.experiments.baseline --seeds 5 --out results/baseline`: all three algorithms 5/5 feasible on all three built-ins; QPSO mean equals the reference on each (73.800 / 60.792 / 55.153) at 1.25 / 0.48 / 1.34 s; OR-Tools 1.00 s; SA 0.14-0.16 s, SA mean 74.920 on congested_city.
+- One-off timing on experimental_grid_s0_n30, seed 0: QPSO 15x30 with LS 211.679 (5.02 s); SA default 211.826 (0.2 s); OR-Tools 2 s 218.515.
+
 ## Known defects and open items
+- M3: local search dominates QPSO runtime (about 5 s on 30 customers); not faster than SA there. Only one larger-experimental instance has been measured.
 - M2: the small fixtures are easy (both methods tie on 2 of 3); larger experimental scenarios are needed before comparisons mean much (M8). No exact/lower-bound method yet, so every gap is vs a heuristic reference. Not yet in the API (runs/worker arrive in M4).
 - Slice UI is minimal: fixed-width side panels (cramped below ~1000px), no light theme, no keyboard path selection on the canvas (selects work via keyboard). M5 replaces it with the real shell.
 - No Playwright yet (M6); the drawn-path check above was manual via the built-in browser plus a Vitest wiring test.

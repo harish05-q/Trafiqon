@@ -6,6 +6,7 @@ Units: x/y and distance in km, times in minutes, speeds in km/h.
 
 from __future__ import annotations
 
+import random
 from collections.abc import Callable
 
 from trafiqon.domain.models import Customer, Depot, Edge, Graph, Node, Scenario, Vehicle
@@ -223,3 +224,58 @@ def load_builtin(scenario_id: str) -> Scenario:
     except KeyError:
         raise KeyError(f"unknown built-in scenario {scenario_id!r}") from None
     return factory()
+
+
+def experimental_grid(seed: int = 0, size: int = 7, n_customers: int = 30) -> Scenario:
+    """LARGER-EXPERIMENTAL synthetic instance for benchmarks (not a built-in UI scenario).
+
+    size x size grid, random one-way streets and congestion from `random.Random(seed)`,
+    `n_customers` customers with demand 1-6, one central depot, capacity-tight fleet of 15.
+    Regenerated identically for the same arguments.
+    """
+    rng = random.Random(seed)
+    one_way = {
+        (r, c, rng.random() < 0.5) for r in range(size) for c in range(size) if rng.random() < 0.25
+    }
+    one_way_dir = {(r, c): east for r, c, east in one_way}
+    factors = {
+        (r, c): round(1.0 + 1.5 * rng.random() ** 3, 2) for r in range(size) for c in range(size)
+    }
+
+    def speed(a, b):
+        return (
+            (ARTERIAL_KMH, "arterial")
+            if size // 2 in (a[0], a[1]) and size // 2 in (b[0], b[1])
+            else (LOCAL_KMH, "local")
+        )
+
+    def allowed(a, b):
+        # A one-way flag on cell a restricts its horizontal outgoing edge to one direction.
+        if a[0] == b[0] and a in one_way_dir:
+            return (b[1] > a[1]) == one_way_dir[a]
+        return True
+
+    def congestion(a, b):
+        return factors[a]
+
+    graph = _grid(size, size, speed_kmh=speed, allowed=allowed, congestion=congestion)
+    depot = (size // 2, size // 2)
+    cells = [(r, c) for r in range(size) for c in range(size) if (r, c) != depot]
+    rng.shuffle(cells)
+    customers = [
+        Customer(f"c{i + 1:02d}", node_id(*cells[i]), rng.randint(1, 6)) for i in range(n_customers)
+    ]
+    total = sum(c.demand for c in customers)
+    n_vehicles = -(-total * 10 // (15 * 9))  # ~90% fleet utilisation
+    return require_valid(
+        Scenario(
+            id=f"experimental_grid_s{seed}_n{n_customers}",
+            name=f"Experimental grid (seed {seed}, {n_customers} customers)",
+            description="Larger-experimental synthetic grid; random one-ways and congestion.",
+            graph=graph,
+            depots=(Depot("d1", node_id(*depot)),),
+            customers=tuple(customers),
+            vehicles=tuple(Vehicle(f"v{k + 1}", 15, "d1") for k in range(n_vehicles)),
+            settings={"units": {"time": "min", "distance": "km"}, "class": "larger-experimental"},
+        )
+    )

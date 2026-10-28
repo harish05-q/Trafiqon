@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import math
 import platform
 import statistics
@@ -17,6 +18,7 @@ from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from importlib import metadata
+from pathlib import Path
 from typing import Any
 
 from trafiqon import __version__
@@ -240,3 +242,39 @@ def summarize(runs: Sequence[RunRecord], spec: str, reference: dict[str, Any] | 
         elapsed_median_s=statistics.median(times) if times else math.nan,
         gap_mean_percent=statistics.fmean(gaps) if gaps else None,
     )
+
+
+def write_report(report: ExperimentReport, out_dir: Path, name: str) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / f"{name}.json").write_text(
+        json.dumps(report.to_json_dict(), indent=2), encoding="utf-8"
+    )
+    (out_dir / f"{name}.csv").write_text(report.runs_csv(), encoding="utf-8")
+
+
+def format_report(report: ExperimentReport, name: str) -> str:
+    """Plain-text summary table. Gap is vs the labelled reference, not an optimum unless
+    the reference kind says `proven_optimum`."""
+
+    def f(x: float | None, w: int, p: int = 3) -> str:
+        return f"{x:>{w}.{p}f}" if x is not None else f"{'-':>{w}}"
+
+    ref = report.reference
+    head = (
+        f"{name} (synthetic={report.metadata['synthetic']}) reference: "
+        f"{ref['objective']:.3f} min [{ref['kind']}]"
+        if ref
+        else f"{name}: no feasible run"
+    )
+    lines = [
+        head,
+        f"{'spec':<26}{'n':>3}{'feas':>6}{'mean':>10}{'median':>10}{'std':>8}"
+        f"{'best':>10}{'gap%':>8}{'time s':>8}",
+    ]
+    for s in report.summaries:
+        lines.append(
+            f"{s.spec:<26}{s.n:>3}{s.feasible_rate:>6.0%}{f(s.objective_mean, 10)}"
+            f"{f(s.objective_median, 10)}{f(s.objective_std, 8)}{f(s.objective_best, 10)}"
+            f"{f(s.gap_mean_percent, 8, 2)}{f(s.elapsed_mean_s, 8, 2)}"
+        )
+    return "\n".join(lines)

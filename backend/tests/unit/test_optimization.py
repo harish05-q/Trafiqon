@@ -23,6 +23,7 @@ from trafiqon.routing import build_scenario_matrix, evaluate_solution
 FAST = {
     "ortools_cvrp": {"time_limit_s": 0.3},
     "simulated_annealing": {"max_iterations": 3000},
+    "qpso_hybrid": {"swarm_size": 8, "iterations": 10},
 }
 FIXTURES = sorted(BUILTIN_SCENARIOS)
 
@@ -102,7 +103,7 @@ def test_infeasibility_reasons():
 
 
 def test_registry():
-    assert set(ALGORITHMS) == {"ortools_cvrp", "simulated_annealing"}
+    assert set(ALGORITHMS) == {"ortools_cvrp", "simulated_annealing", "qpso_hybrid"}
     with pytest.raises(ConfigError):
         get_algorithm("random_search")
 

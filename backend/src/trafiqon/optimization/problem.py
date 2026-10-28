@@ -56,6 +56,11 @@ class RoutingProblem:
         self.n_vehicles = len(self.vehicles)
         finite = self.time[np.isfinite(self.time)]
         self.max_leg_time = float(finite.max()) if finite.size else 0.0
+        # Plain-Python copies: scalar indexing into lists is much faster than into ndarrays,
+        # and route_cost is the innermost loop of every search.
+        self.t = self.time.tolist()
+        self.loc = self.customer_loc.tolist()
+        self.dem = self.demand.tolist()
 
     def route_cost(self, v: int, seq: list[int]) -> tuple[float, str]:
         """Travel time of vehicle `v` serving `seq`, ending at its cheapest allowed end depot.
@@ -66,20 +71,21 @@ class RoutingProblem:
         spec = self.vehicles[v]
         if not seq:
             return 0.0, spec.start_depot_id
-        t = self.time
-        loc = self.customer_loc
-        cost = t[spec.start, loc[seq[0]]]
+        t = self.t
+        loc = self.loc
+        cost = t[spec.start][loc[seq[0]]]
         for a, b in itertools.pairwise(seq):
-            cost += t[loc[a], loc[b]]
-        last = loc[seq[-1]]
+            cost += t[loc[a]][loc[b]]
+        row = t[loc[seq[-1]]]
         best_end, best_end_cost = spec.start_depot_id, math.inf
         for depot_id, idx in spec.ends:
-            if t[last, idx] < best_end_cost:
-                best_end, best_end_cost = depot_id, t[last, idx]
-        return float(cost + best_end_cost), best_end
+            if row[idx] < best_end_cost:
+                best_end, best_end_cost = depot_id, row[idx]
+        return cost + best_end_cost, best_end
 
     def load(self, seq: list[int]) -> int:
-        return int(self.demand[seq].sum()) if seq else 0
+        dem = self.dem
+        return sum(dem[c] for c in seq)
 
     def overload(self, routes: Routes) -> int:
         return sum(

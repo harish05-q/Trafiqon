@@ -78,3 +78,15 @@ def test_congested_core_is_slower_than_base():
 def test_unknown_builtin():
     with pytest.raises(KeyError):
         load_builtin("nope")
+
+
+def test_experimental_grid_is_deterministic_valid_and_labelled():
+    from trafiqon.fixtures.builtin import experimental_grid
+
+    a, b = experimental_grid(0), experimental_grid(0)
+    assert scenario_to_dict(a) == scenario_to_dict(b)
+    assert scenario_to_dict(experimental_grid(1)) != scenario_to_dict(a)
+    assert a.synthetic and a.settings["class"] == "larger-experimental"
+    assert validate_scenario(a) == [] and check_reachability(a) == []
+    assert len(a.customers) == 30 and len(a.graph.nodes) == 49
+    assert "experimental_grid" not in BUILTIN_SCENARIOS

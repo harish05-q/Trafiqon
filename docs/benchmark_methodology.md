@@ -35,6 +35,8 @@ No quantity is estimated or simulated in M2. Exports include a `quantity_kinds` 
 ## Budgets are not equal (explicit difference)
 - **OR-Tools** is limited by wall time (`time_limit_s`, CLI default 1.0 s). It exposes no evaluation count.
 - **SA** is limited by iterations (CLI default 20,000 proposed moves). Iterations keep it deterministic per seed; its wall time is recorded.
+- **QPSO hybrid** is limited by swarm size × iterations (default 20 × 100 particle evaluations). Its `evaluations` field also counts every local-search move tried, so it is not comparable to SA's count. Use wall time to compare cost across methods.
+- **QPSO ablation** (`trafiqon.experiments.ablation_qpso`): budgets are equal between the two update rules because only `update_rule` differs (test-enforced).
 
 Comparisons of objective quality should be read together with the recorded wall times. A budget-matched comparison (e.g. SA with `time_limit_s` equal to OR-Tools' limit) can be run by passing configs to `run_experiment`, at the cost of SA determinism.
 
@@ -60,4 +62,4 @@ The CLI writes `<scenario>.json` and `<scenario>.csv`. `backend/results/` is git
 
 ## Fixtures
 - The built-in scenarios (Urban Grid, Congested City, Incident Response) are **small synthetic** fixtures: 25–36 nodes and 8–12 customers.
-- No larger experimental scenarios exist yet.
+- **Larger-experimental:** `fixtures.builtin.experimental_grid(seed, size=7, n_customers=30)`, a synthetic 49-node grid. One-way streets and congestion come from `random.Random(seed)`, the fleet is sized for about 90 % utilisation, and the scenario is labelled `settings.class = "larger-experimental"`. It is not offered as a built-in UI scenario.

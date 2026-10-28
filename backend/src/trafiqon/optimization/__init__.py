@@ -12,9 +12,12 @@ from trafiqon.optimization.contract import (
     TerminationReason,
 )
 from trafiqon.optimization.ortools_cvrp import OrToolsCvrp
+from trafiqon.optimization.qpso import QpsoHybrid
 from trafiqon.optimization.simulated_annealing import SimulatedAnnealing
 
-ALGORITHMS: dict[str, Algorithm] = {a.id: a for a in (OrToolsCvrp(), SimulatedAnnealing())}
+ALGORITHMS: dict[str, Algorithm] = {
+    a.id: a for a in (OrToolsCvrp(), SimulatedAnnealing(), QpsoHybrid())
+}
 
 
 def get_algorithm(algorithm_id: str) -> Algorithm:
@@ -35,6 +38,7 @@ __all__ = [
     "Optimality",
     "OrToolsCvrp",
     "ProgressEvent",
+    "QpsoHybrid",
     "SimulatedAnnealing",
     "TerminationReason",
     "get_algorithm",
