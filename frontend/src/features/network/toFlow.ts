@@ -23,6 +23,7 @@ export interface RoadEdgeData extends Record<string, unknown> {
   traffic: TrafficState;
   onRoute: boolean;
   dimmed: boolean; // on another vehicle's route while one route is selected
+  onAlt: boolean; // used by the comparison run's routes
   selected: boolean;
   hasReverse: boolean; // a parallel edge in the opposite direction exists: draw offset
   vehicles: string[]; // vehicles whose route uses this edge
@@ -44,6 +45,8 @@ export interface FlowOptions {
   selectedNodeId?: string | null;
   selectedEdgeId?: string | null;
   selectedVehicleId?: string | null;
+  /** Routes of a comparison run, drawn as a restrained secondary overlay. */
+  altRoutes?: RouteOverlay[];
 }
 
 export function trafficState(e: EdgeOut): TrafficState {
@@ -61,6 +64,7 @@ export function toFlow(
   opts: FlowOptions = {},
 ): { nodes: RoadNode[]; edges: RoadEdge[] } {
   const routes = opts.routes ?? [];
+  const altEdges = new Set((opts.altRoutes ?? []).flatMap((r) => r.edgeIds));
   const depotByNode = new Map(scenario.depots.map((d) => [d.node_id, d]));
   const customerByNode = new Map(scenario.customers.map((c) => [c.node_id, c]));
   const edgeById = new Map(scenario.graph.edges.map((e) => [e.id, e]));
@@ -113,6 +117,7 @@ export function toFlow(
           traffic: trafficState(e),
           onRoute,
           dimmed: !!opts.selectedVehicleId && onRoute && !vehicles.includes(opts.selectedVehicleId),
+          onAlt: altEdges.has(e.id),
           selected: opts.selectedEdgeId === e.id,
           hasReverse: pairs.has(`${e.target}\u0000${e.source}`),
           vehicles,

@@ -29,6 +29,7 @@ from trafiqon.optimization.contract import (
     AlgorithmResult,
     ConfigError,
     HistoryPoint,
+    ParamSpec,
     ProgressEvent,
     Stopwatch,
     TerminationReason,
@@ -87,6 +88,116 @@ class SimulatedAnnealing:
         "progress_every": 500,
         "history_points": 200,
     }
+
+    params = (
+        ParamSpec(
+            "max_iterations",
+            "int",
+            "Number of proposed moves (the main budget). Deterministic per seed.",
+            1,
+            10_000_000,
+            unit="moves",
+        ),
+        ParamSpec(
+            "time_limit_s",
+            "float",
+            "Optional wall-clock limit; makes results machine-dependent.",
+            0.001,
+            3600,
+            nullable=True,
+            null_meaning="none",
+            unit="s",
+        ),
+        ParamSpec(
+            "initial_temperature",
+            "float",
+            "Starting temperature T0 (minutes of travel time).",
+            1e-9,
+            None,
+            nullable=True,
+            null_meaning="auto: -mean(uphill delta) / ln(initial_acceptance)",
+            advanced=True,
+        ),
+        ParamSpec(
+            "initial_acceptance",
+            "float",
+            "Target probability of accepting an average uphill move at T0 (auto T0 only).",
+            1e-6,
+            0.999,
+            advanced=True,
+        ),
+        ParamSpec(
+            "temperature_samples",
+            "int",
+            "Random moves sampled to set the automatic T0.",
+            1,
+            10_000,
+            advanced=True,
+        ),
+        ParamSpec(
+            "final_temperature_ratio",
+            "float",
+            "T_final / T0. With automatic cooling the temperature reaches this fraction of T0 "
+            "at max_iterations.",
+            1e-12,
+            0.999,
+            advanced=True,
+        ),
+        ParamSpec(
+            "cooling_rate",
+            "float",
+            "Geometric factor alpha in T_k = T0 * alpha^k. If set, the run also stops when "
+            "T < T0 * final_temperature_ratio.",
+            1e-6,
+            0.999999999,
+            nullable=True,
+            null_meaning="auto: final_temperature_ratio^(1/max_iterations)",
+            advanced=True,
+        ),
+        ParamSpec(
+            "max_no_improvement",
+            "int",
+            "Stop after this many moves without a better feasible incumbent.",
+            1,
+            None,
+            nullable=True,
+            null_meaning="disabled",
+        ),
+        ParamSpec(
+            "overload_penalty",
+            "float",
+            "Minutes added per unit of demand above capacity so the search can cross "
+            "infeasible states. Never part of the reported objective.",
+            0,
+            None,
+            nullable=True,
+            null_meaning="auto: 2 x longest leg time",
+            advanced=True,
+        ),
+        ParamSpec(
+            "moves",
+            "enum_list",
+            "Neighbourhood moves chosen uniformly: relocate a customer, swap two customers, "
+            "reverse a route segment.",
+            choices=MOVES,
+        ),
+        ParamSpec(
+            "progress_every",
+            "int",
+            "Report progress every N iterations.",
+            1,
+            None,
+            advanced=True,
+        ),
+        ParamSpec(
+            "history_points",
+            "int",
+            "Approximate number of convergence-history samples.",
+            2,
+            10_000,
+            advanced=True,
+        ),
+    )
 
     def resolve_config(self, config: Mapping[str, Any]) -> dict[str, Any]:
         cfg = merge_config(self.defaults, config, self.id)

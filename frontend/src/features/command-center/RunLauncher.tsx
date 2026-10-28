@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { ErrorState, LoadingState, Section } from "@/components/status";
@@ -192,6 +193,13 @@ export function RunLauncher() {
             {submit.isPending ? "Submitting…" : "Launch run"}
           </Button>
           {!versionId && <p className="text-text-muted text-[11px]">Load a scenario first.</p>}
+          <p className="text-text-muted text-[11px]">
+            Budget only here; every parameter is in the{" "}
+            <Link href="/algorithm-lab" className="underline">
+              Algorithm Lab
+            </Link>
+            .
+          </p>
         </form>
       )}
     </Section>

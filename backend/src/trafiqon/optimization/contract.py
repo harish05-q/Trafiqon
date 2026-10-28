@@ -116,6 +116,23 @@ class AlgorithmResult:
     diagnostics: dict[str, Any]
 
 
+@dataclass(frozen=True, slots=True)
+class ParamSpec:
+    """Documentation of one configuration key, published so UIs show only real settings.
+    `resolve_config` remains the authority; a test checks specs and defaults agree."""
+
+    key: str
+    kind: str  # "int" | "float" | "bool" | "enum" | "enum_list"
+    description: str
+    minimum: float | None = None
+    maximum: float | None = None
+    nullable: bool = False
+    null_meaning: str = ""
+    choices: tuple[str, ...] = ()
+    unit: str = ""
+    advanced: bool = False
+
+
 class ConfigError(ValueError):
     pass
 
@@ -125,6 +142,7 @@ class Algorithm(Protocol):
     version: str
     uses_seed: bool
     defaults: Mapping[str, Any]
+    params: tuple[ParamSpec, ...]
 
     def resolve_config(self, config: Mapping[str, Any]) -> dict[str, Any]:
         """Merge with defaults and validate; raise ConfigError on bad input."""

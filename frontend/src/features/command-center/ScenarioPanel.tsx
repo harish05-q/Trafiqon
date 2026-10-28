@@ -1,6 +1,7 @@
 "use client";
 
 import { Download } from "lucide-react";
+import Link from "next/link";
 
 import { EmptyState, ErrorState, LoadingState, Section } from "@/components/status";
 import { Button } from "@/components/ui/button";
@@ -83,7 +84,14 @@ export function ScenarioPanel() {
       </Section>
 
       {version.data && (
-        <Section title="Loaded version">
+        <Section
+          title="Loaded version"
+          actions={
+            <Link href="/scenario-studio" className="text-xs underline">
+              Edit network, demand, fleet
+            </Link>
+          }
+        >
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
             <dt className="text-muted-foreground">Version</dt>
             <dd className="num">v{version.data.version_number}</dd>

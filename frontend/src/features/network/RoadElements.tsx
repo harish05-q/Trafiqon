@@ -52,6 +52,7 @@ export const RoadEdgeView = memo(function RoadEdgeView({
     data.traffic !== "normal" && data.traffic,
     data.onRoute && "on-route",
     data.dimmed && "dimmed",
+    data.onAlt && !data.onRoute && "alt-route",
     data.selected && "selected",
   ]
     .filter(Boolean)

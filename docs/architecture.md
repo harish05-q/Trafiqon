@@ -34,3 +34,14 @@ frontend (Next.js)  --HTTP/SSE-->  api (FastAPI)  --SQL-->  PostgreSQL  <--SQL--
 - **SSE:** streams poll `run_events` every 0.5 s through the API's thread pool. This suits a single-node deployment.
 - **Celery + Redis:** could be added as another `JobQueue` implementation without changing optimizers or the API (see STATUS.md D1).
 - **Synchronous drivers:** sync SQLAlchemy/psycopg everywhere, which avoids Windows asyncio event-loop issues. Async endpoints (SSE) call the database through the thread pool.
+
+## Frontend (`frontend/`, Next.js App Router)
+- **Workspaces:** route group `(workspaces)`: Command Center, Algorithm Lab, Scenario Studio, Experiment Explorer. They share the shell (`components/shell`).
+- **Server state:** TanStack Query only (`lib/api/hooks.ts`, typed client `lib/api/client.ts`). Nothing in the UI invents server data.
+- **Client state:** Zustand (`stores/workspace.ts`) holds the per-workspace theme, loaded scenario version, active and comparison run, and panel layout. It is persisted to localStorage, so jobs survive navigation and refresh.
+- **Live progress:** one `EventSource` per active run, mounted once in the shell (`ActiveRunStream`). It feeds a shared, id-deduplicating event log (`lib/api/events.ts`) and invalidates queries on lifecycle events. Polling is only a fallback.
+- **Parameter forms:** generated from `GET /algorithms` parameter specs, which carry descriptions, ranges and server caps. Only values changed from the defaults are submitted.
+- **Scenario Studio:** edits go through a pure draft reducer (`features/scenario-studio/draft.ts`) that rejects invalid edits with a message. The server validates (`POST /scenarios/validate`) and saves immutable versions.
+- **Charts:** ECharts via a small wrapper. The option builder is a pure, tested function; series colours come from the series tokens. The chart shows stored history after a run, or live progress reports during one, labelled as such.
+- **Themes:** design tokens live only in `app/globals.css`. Operational workspaces start dark; the Experiment Explorer starts on the warm light theme.
+- **Tests:** Vitest (`src/**/*.test.ts(x)`) uses real-shaped API fixtures (`src/test/fake-api.ts`). Playwright (`e2e/`) runs against the real stack: a migrated e2e database, the API on :8100, a separate worker process, and a production build on :3100.

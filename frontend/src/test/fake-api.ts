@@ -3,7 +3,8 @@
 import { vi } from "vitest";
 
 import type {
-  AlgorithmInfo,
+  AlgorithmInfoFull,
+  ParamOut,
   RunOut,
   RunResultOut,
   ScenarioOut,
@@ -78,14 +79,79 @@ export const savedScenario: ScenarioRecord = {
   updated_at: "2026-10-28T00:00:00Z",
 };
 
-export const algorithms: AlgorithmInfo[] = [
-  { id: "ortools_cvrp", version: "1", uses_seed: false, defaults: { time_limit_s: 2 } },
-  { id: "simulated_annealing", version: "1", uses_seed: true, defaults: { max_iterations: 20000 } },
+function param(p: Partial<ParamOut> & Pick<ParamOut, "key" | "kind" | "default">): ParamOut {
+  return {
+    description: `${p.key} description`,
+    minimum: null,
+    maximum: null,
+    nullable: false,
+    null_meaning: "",
+    choices: [],
+    unit: "",
+    advanced: false,
+    ...p,
+  };
+}
+
+export const algorithms: AlgorithmInfoFull[] = [
+  {
+    id: "ortools_cvrp",
+    version: "1",
+    uses_seed: false,
+    defaults: { time_limit_s: 2 },
+    params: [
+      param({
+        key: "time_limit_s",
+        kind: "float",
+        default: 2,
+        minimum: 0.01,
+        maximum: 120,
+        unit: "s",
+      }),
+    ],
+  },
+  {
+    id: "simulated_annealing",
+    version: "1",
+    uses_seed: true,
+    defaults: { max_iterations: 20000, cooling_rate: null, moves: ["relocate", "swap", "reverse"] },
+    params: [
+      param({ key: "max_iterations", kind: "int", default: 20000, minimum: 1, maximum: 2_000_000 }),
+      param({
+        key: "cooling_rate",
+        kind: "float",
+        default: null,
+        minimum: 1e-6,
+        maximum: 0.999999999,
+        nullable: true,
+        null_meaning: "auto: final_temperature_ratio^(1/max_iterations)",
+        advanced: true,
+      }),
+      param({
+        key: "moves",
+        kind: "enum_list",
+        default: ["relocate", "swap", "reverse"],
+        choices: ["relocate", "swap", "reverse"],
+      }),
+    ],
+  },
   {
     id: "qpso_hybrid",
     version: "1",
     uses_seed: true,
-    defaults: { iterations: 100, swarm_size: 20 },
+    defaults: { iterations: 100, swarm_size: 20, lamarckian: true, update_rule: "qpso" },
+    params: [
+      param({ key: "swarm_size", kind: "int", default: 20, minimum: 2, maximum: 100 }),
+      param({ key: "iterations", kind: "int", default: 100, minimum: 1, maximum: 2000 }),
+      param({ key: "lamarckian", kind: "bool", default: true }),
+      param({
+        key: "update_rule",
+        kind: "enum",
+        default: "qpso",
+        choices: ["qpso", "uniform_resample"],
+        advanced: true,
+      }),
+    ],
   },
 ];
 

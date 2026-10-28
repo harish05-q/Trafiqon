@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { useWorkspace } from "@/stores/workspace";
+import { DEFAULT_THEMES, useWorkspace, workspaceFromPath } from "@/stores/workspace";
 import { installFetch } from "@/test/fake-api";
 import { AppShell, WORKSPACES } from "./AppShell";
 
@@ -20,7 +20,7 @@ function renderShell() {
 }
 
 describe("AppShell", () => {
-  beforeEach(() => useWorkspace.setState({ theme: "dark", versionId: null }));
+  beforeEach(() => useWorkspace.setState({ themes: { ...DEFAULT_THEMES }, versionId: null }));
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
@@ -75,7 +75,15 @@ describe("AppShell", () => {
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe("dark"));
     fireEvent.click(screen.getByRole("button", { name: "Switch to light theme" }));
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe("light"));
-    expect(useWorkspace.getState().theme).toBe("light");
+    expect(useWorkspace.getState().themes["command-center"]).toBe("light");
+    expect(useWorkspace.getState().themes.experiments).toBe("light"); // untouched default
+  });
+
+  it("uses per-workspace themes: analysis starts light, operations start dark", () => {
+    expect(DEFAULT_THEMES["command-center"]).toBe("dark");
+    expect(DEFAULT_THEMES.experiments).toBe("light");
+    expect(workspaceFromPath("/experiments")).toBe("experiments");
+    expect(workspaceFromPath("/unknown")).toBe("command-center");
   });
 
   it("says simulation is not available rather than showing a fake state", () => {

@@ -230,11 +230,45 @@ class Page[T](Schema):
 # --- runs -------------------------------------------------------------------------------
 
 
+class ParamOut(Schema):
+    key: str
+    kind: Literal["int", "float", "bool", "enum", "enum_list"]
+    description: str
+    minimum: float | None
+    maximum: float | None = Field(description="algorithm range, capped by server limits")
+    nullable: bool
+    null_meaning: str
+    choices: list[str]
+    unit: str
+    advanced: bool
+    default: Any
+
+
 class AlgorithmInfo(Schema):
     id: str
     version: str
     uses_seed: bool
     defaults: dict[str, Any]
+    params: list[ParamOut]
+
+
+class ValidationIssueOut(Schema):
+    code: str
+    message: str
+    severity: Literal["error", "infeasible", "warning"]
+    ref: str | None = None
+
+
+class ScenarioValidation(Schema):
+    valid: bool = Field(description="no structural errors: can be saved")
+    feasible_so_far: bool = Field(
+        description="no capacity or reachability infeasibility detected (not a proof)"
+    )
+    issues: list[ValidationIssueOut]
+    strongly_connected_components: int | None
+    unreachable_location_pairs: int | None
+    total_demand: int | None
+    total_capacity: int | None
 
 
 class RunCreate(Schema):

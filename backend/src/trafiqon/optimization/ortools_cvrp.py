@@ -25,6 +25,7 @@ from trafiqon.optimization.contract import (
     ConfigError,
     HistoryPoint,
     Optimality,
+    ParamSpec,
     ProgressEvent,
     Stopwatch,
     TerminationReason,
@@ -50,6 +51,52 @@ class OrToolsCvrp:
         "solution_limit": None,
         "cost_scale": 1000,
     }
+
+    params = (
+        ParamSpec(
+            "time_limit_s",
+            "float",
+            "Wall-clock search limit. The search usually runs to this limit, so results are "
+            "time-dependent and never reported as proven optimal unless the solver proves it.",
+            0.01,
+            600,
+            unit="s",
+        ),
+        ParamSpec(
+            "first_solution_strategy",
+            "enum",
+            "OR-Tools heuristic that builds the first feasible routing before local search.",
+            choices=tuple(k for k in FIRST_SOLUTION if k != "UNSET"),
+            advanced=True,
+        ),
+        ParamSpec(
+            "local_search_metaheuristic",
+            "enum",
+            "OR-Tools improvement strategy after the first solution (GUIDED_LOCAL_SEARCH "
+            "penalizes frequently used arcs).",
+            choices=tuple(k for k in METAHEURISTICS if k != "UNSET"),
+            advanced=True,
+        ),
+        ParamSpec(
+            "solution_limit",
+            "int",
+            "Stop after this many solutions are found.",
+            1,
+            None,
+            nullable=True,
+            null_meaning="no limit (time limit only)",
+            advanced=True,
+        ),
+        ParamSpec(
+            "cost_scale",
+            "int",
+            "Integer units per minute inside the solver. The reported objective is "
+            "re-computed by the shared evaluator.",
+            1,
+            1_000_000,
+            advanced=True,
+        ),
+    )
 
     def resolve_config(self, config: Mapping[str, Any]) -> dict[str, Any]:
         cfg = merge_config(self.defaults, config, self.id)

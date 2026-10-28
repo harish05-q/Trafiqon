@@ -17,7 +17,10 @@ Common codes:
 ## Health and metadata
 - `GET /health`: liveness. Reports database status as `ok`, `unavailable` or `not_configured`.
 - `GET /ready`: readiness. 200 only if the database is reachable, else 503.
-- `GET /algorithms`: id, version, `uses_seed` and default config for each algorithm.
+- `GET /algorithms`: for each algorithm, its id, version, `uses_seed`, defaults and `params`.
+  - `params` are the documented parameter specs: key, kind (`int`/`float`/`bool`/`enum`/`enum_list`), description, minimum/maximum, nullable with its meaning, choices, unit, advanced flag and default.
+  - Maxima already include the server limits, so a UI built from them never offers a value the server would reject.
+  - A unit test asserts the specs list exactly the keys `resolve_config` accepts.
 - `GET /meta`: app version and request limits. Contains no secrets and no URLs.
 
 ## Built-in scenarios (no database)
@@ -33,6 +36,10 @@ Common codes:
 - `DELETE /scenarios/{id}`: 204. Returns 409 `scenario_in_use` if any run or suite references any of its versions.
 - `POST /scenarios/{id}/versions` with `{data, note}`. Returns 201 with the next `version_number`, which becomes the current version.
 - `GET /scenarios/{id}/versions/{number}` and `GET /scenario-versions/{version_id}`.
+- `POST /scenarios/validate` with scenario data: checks it without saving.
+  - Returns `valid` (no structural errors, so it can be saved) and `feasible_so_far` (no capacity or reachability infeasibility *detected*; this is not a proof that a solution exists).
+  - Returns issues, each with severity `error`, `infeasible` or `warning`; `not_strongly_connected` is a warning.
+  - Also returns the number of strongly connected components of the open network, the number of unreachable depot/customer pairs, and total demand and capacity.
 
 Versions are never updated. A Postgres trigger rejects `UPDATE` on `scenario_versions`. Each version stores a SHA-256 fingerprint of its canonical content.
 
@@ -44,7 +51,9 @@ Submitted data is validated in this order: limits, then structure (`GraphError`)
   - For seeded algorithms a missing seed is generated and stored **before** execution.
   - The run row is inserted as `QUEUED` and committed before the response.
 - **Idempotency:** the same key with the same body returns the original run with 200. The same key with a different body returns 409. Concurrent duplicates are resolved by the unique key.
-- `GET /runs?status&algorithm_id&scenario_version_id&suite_id&limit&offset`
+- `GET /runs?status&algorithm_id&scenario_version_id&suite_id&scenario_id&created_after&created_before&limit&offset`
+  - `scenario_id` matches any version of that scenario.
+  - `created_after` is inclusive and `created_before` exclusive; both are ISO-8601.
 - `GET /runs/{id}`: returns `status`, `attempt`, timestamps, the latest `progress` summary, `termination_reason` and `error`.
 - `POST /runs/{id}/cancel`: idempotent.
   - `QUEUED` becomes `CANCELLED` immediately (202).

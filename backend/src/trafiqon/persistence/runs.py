@@ -10,12 +10,19 @@ import hashlib
 import json
 import uuid
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from trafiqon.persistence.models import RunEventRow, RunResultRow, RunRow, RunStatus
+from trafiqon.persistence.models import (
+    RunEventRow,
+    RunResultRow,
+    RunRow,
+    RunStatus,
+    ScenarioVersionRow,
+)
 
 
 def request_fingerprint(payload: dict[str, Any]) -> str:
@@ -84,6 +91,9 @@ class RunFilter:
     algorithm_id: str | None = None
     scenario_version_id: uuid.UUID | None = None
     suite_id: uuid.UUID | None = None
+    scenario_id: uuid.UUID | None = None
+    created_after: datetime | None = None
+    created_before: datetime | None = None
 
 
 def list_runs(
@@ -98,6 +108,15 @@ def list_runs(
         query = query.where(RunRow.scenario_version_id == flt.scenario_version_id)
     if flt.suite_id:
         query = query.where(RunRow.suite_id == flt.suite_id)
+    if flt.scenario_id:
+        versions = select(ScenarioVersionRow.id).where(
+            ScenarioVersionRow.scenario_id == flt.scenario_id
+        )
+        query = query.where(RunRow.scenario_version_id.in_(versions))
+    if flt.created_after:
+        query = query.where(RunRow.created_at >= flt.created_after)
+    if flt.created_before:
+        query = query.where(RunRow.created_at < flt.created_before)
     total = session.scalar(select(func.count()).select_from(query.subquery())) or 0
     rows = session.scalars(
         query.order_by(RunRow.created_at.desc(), RunRow.id).limit(limit).offset(offset)

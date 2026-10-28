@@ -4,7 +4,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api } from "./client";
-import { TERMINAL_STATUSES, type RunCreate, type RunOut } from "./types";
+import {
+  TERMINAL_STATUSES,
+  type RunCreate,
+  type RunFilters,
+  type RunOut,
+  type ScenarioData,
+  type SuiteSpec,
+} from "./types";
 
 export const keys = {
   health: ["health"] as const,
@@ -113,5 +120,87 @@ export function useCancelRun() {
     mutationFn: (runId: string) => api.cancelRun(runId),
     // Not optimistic: the server decides between CANCELLED and CANCELLING.
     onSettled: (_d, _e, runId) => qc.invalidateQueries({ queryKey: keys.run(runId) }),
+  });
+}
+
+// --- M6 -------------------------------------------------------------------------------------
+
+export function useRunList(filters: RunFilters) {
+  return useQuery({
+    queryKey: ["runs", "list", filters],
+    queryFn: () => api.listRuns(filters),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useValidation(versionId: string | null, data: ScenarioData | null) {
+  // Validation of an immutable stored version never changes: cache it forever.
+  return useQuery({
+    queryKey: ["validation", versionId],
+    queryFn: () => api.validateScenario(data!),
+    enabled: !!versionId && !!data,
+    staleTime: Infinity,
+  });
+}
+
+export function useValidateDraft() {
+  return useMutation({ mutationFn: (data: ScenarioData) => api.validateScenario(data) });
+}
+
+export function useSaveScenario() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: {
+      scenarioId: string | null;
+      name: string;
+      data: ScenarioData;
+      note: string;
+    }) =>
+      v.scenarioId
+        ? api.createVersion(v.scenarioId, v.data, v.note).then((ver) => ver.id)
+        : api.createScenario(v.name, v.note, v.data).then((s) => s.current_version_id!),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.scenarios }),
+  });
+}
+
+export function useSuites() {
+  return useQuery({ queryKey: ["suites"], queryFn: () => api.listSuites() });
+}
+
+export function useSuite(id: string | null) {
+  return useQuery({
+    queryKey: ["suites", id],
+    queryFn: () => api.getSuite(id!),
+    enabled: !!id,
+    refetchInterval: (q) => {
+      const c = q.state.data?.status_counts ?? {};
+      const open = (c.QUEUED ?? 0) + (c.RUNNING ?? 0) + (c.CANCELLING ?? 0);
+      return open > 0 ? 2000 : false;
+    },
+  });
+}
+
+export function useSuiteComparison(id: string | null, revision: string) {
+  return useQuery({
+    queryKey: ["suites", id, "comparison", revision],
+    queryFn: () => api.suiteComparison(id!),
+    enabled: !!id,
+  });
+}
+
+export function useLaunchSuite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      name: string;
+      scenario_version_id: string;
+      specs: SuiteSpec[];
+      repetitions: number;
+      budget_policy: string;
+    }) => api.launchSuite(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["suites"] });
+      qc.invalidateQueries({ queryKey: ["runs"] });
+    },
   });
 }

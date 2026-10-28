@@ -18,6 +18,7 @@ from trafiqon.optimization.contract import (
     AlgorithmResult,
     ConfigError,
     HistoryPoint,
+    ParamSpec,
     ProgressEvent,
     Stopwatch,
     TerminationReason,
@@ -100,6 +101,98 @@ class QpsoHybrid:
         "max_no_improvement": None,
         "update_rule": "qpso",
     }
+
+    params = (
+        ParamSpec(
+            "swarm_size",
+            "int",
+            "Particles M. Budget = swarm_size x iterations particle evaluations, plus the "
+            "initial swarm.",
+            2,
+            500,
+            unit="particles",
+        ),
+        ParamSpec(
+            "iterations",
+            "int",
+            "Swarm updates T. Each moves every particle with the QPSO rule, then decodes, "
+            "repairs and locally improves it.",
+            1,
+            100_000,
+        ),
+        ParamSpec(
+            "beta_start",
+            "float",
+            "Contraction-expansion coefficient at the first iteration; larger widens sampling "
+            "around the attractor (exploration).",
+            0,
+            3,
+        ),
+        ParamSpec(
+            "beta_end",
+            "float",
+            "Coefficient at the last iteration (linear schedule); smaller contracts the swarm "
+            "(exploitation).",
+            0,
+            3,
+        ),
+        ParamSpec(
+            "local_search_passes",
+            "int",
+            "First-improvement relocate/swap/2-opt passes per decoded particle; 0 disables it.",
+            0,
+            100,
+        ),
+        ParamSpec(
+            "lamarckian",
+            "bool",
+            "Write the improved routes back into the particle keys (exact re-encoding).",
+        ),
+        ParamSpec(
+            "seed_with_construction",
+            "bool",
+            "Initialise particle 0 from the deterministic cheapest-insertion construction.",
+            advanced=True,
+        ),
+        ParamSpec(
+            "overload_penalty",
+            "float",
+            "Minutes per unit of overload for particles that repair could not make feasible "
+            "(ranking only).",
+            0,
+            None,
+            nullable=True,
+            null_meaning="auto: 2 x longest leg time",
+            advanced=True,
+        ),
+        ParamSpec(
+            "time_limit_s",
+            "float",
+            "Optional wall-clock limit; makes results machine-dependent.",
+            0.001,
+            3600,
+            nullable=True,
+            null_meaning="none",
+            unit="s",
+        ),
+        ParamSpec(
+            "max_no_improvement",
+            "int",
+            "Stop after this many iterations without a better feasible incumbent.",
+            1,
+            None,
+            nullable=True,
+            null_meaning="disabled",
+        ),
+        ParamSpec(
+            "update_rule",
+            "enum",
+            "qpso: the documented QPSO update. uniform_resample: ABLATION BASELINE ONLY "
+            "(independent random keys) for measuring the update's contribution.",
+            choices=UPDATE_RULES,
+            advanced=True,
+        ),
+    )
 
     def resolve_config(self, config: Mapping[str, Any]) -> dict[str, Any]:
         cfg = merge_config(self.defaults, config, self.id)

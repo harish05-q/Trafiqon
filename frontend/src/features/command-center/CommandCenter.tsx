@@ -33,6 +33,12 @@ export function CommandCenter() {
   const runForVersion = run.data?.scenario_version_id === versionId ? run.data : undefined;
   const result = useRunResult(runForVersion);
   const routes = useMemo(() => routesFromResult(result.data), [result.data]);
+  const compareRunId = useWorkspace((s) => s.compareRunId);
+  const compareRun = useRun(compareRunId);
+  const compareForVersion =
+    compareRun.data?.scenario_version_id === versionId ? compareRun.data : undefined;
+  const compareResult = useRunResult(compareForVersion);
+  const altRoutes = useMemo(() => routesFromResult(compareResult.data), [compareResult.data]);
 
   let center: React.ReactNode;
   if (!versionId) {
@@ -54,7 +60,7 @@ export function CommandCenter() {
       </div>
     );
   } else {
-    center = <NetworkCanvas scenario={version.data.data} routes={routes} />;
+    center = <NetworkCanvas scenario={version.data.data} routes={routes} altRoutes={altRoutes} />;
   }
 
   return (
@@ -74,6 +80,8 @@ export function CommandCenter() {
             result={result.data}
             resultLoading={result.isLoading}
             resultError={result.error}
+            compareRun={compareForVersion}
+            compareResult={compareResult.data}
           />
         ) : (
           <div className="p-3">

@@ -8,7 +8,8 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useHealth, useVersion } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
-import { useWorkspace } from "@/stores/workspace";
+import { ActiveRunStream } from "@/lib/api/events";
+import { useWorkspace, workspaceFromPath } from "@/stores/workspace";
 
 export const WORKSPACES = [
   { href: "/command-center", label: "Command Center" },
@@ -17,9 +18,8 @@ export const WORKSPACES = [
   { href: "/experiments", label: "Experiment Explorer" },
 ] as const;
 
-/** Applies the persisted theme to <html data-theme> (all colors flow from tokens). */
-function ThemeSync() {
-  const theme = useWorkspace((s) => s.theme);
+/** Applies the current workspace's theme to <html data-theme> (colors flow from tokens). */
+function ThemeSync({ theme }: { theme: string }) {
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
@@ -62,11 +62,13 @@ function CurrentScenario() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const theme = useWorkspace((s) => s.theme);
+  const workspace = workspaceFromPath(pathname);
+  const theme = useWorkspace((s) => s.themes[workspace]);
   const toggleTheme = useWorkspace((s) => s.toggleTheme);
   return (
     <div className="flex h-dvh flex-col">
-      <ThemeSync />
+      <ThemeSync theme={theme} />
+      <ActiveRunStream />
       <header className="bg-card flex h-11 shrink-0 items-center gap-4 border-b px-3">
         <span className="font-semibold tracking-wide">TRAFIQON</span>
         <nav aria-label="Workspaces" className="flex gap-0.5 overflow-x-auto">
@@ -101,8 +103,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={toggleTheme}
+            onClick={() => toggleTheme(workspace)}
             aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+            title="Theme for this workspace"
           >
             {theme === "dark" ? <Sun /> : <Moon />}
           </Button>

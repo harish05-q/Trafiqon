@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { RouteOverlay } from "@/features/network/toFlow";
+import { ActiveRunStream } from "@/lib/api/events";
 import { useWorkspace } from "@/stores/workspace";
 import {
   FakeEventSource,
@@ -28,6 +29,7 @@ function renderCC() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
+      <ActiveRunStream />
       <CommandCenter />
     </QueryClientProvider>,
   );
@@ -57,7 +59,12 @@ describe("Command Center", () => {
     canvasProps.length = 0;
     FakeEventSource.instances = [];
     vi.stubGlobal("EventSource", FakeEventSource);
-    useWorkspace.setState({ versionId: null, activeRunId: null, selection: null });
+    useWorkspace.setState({
+      versionId: null,
+      activeRunId: null,
+      compareRunId: null,
+      selection: null,
+    });
   });
   afterEach(() => {
     cleanup();

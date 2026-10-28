@@ -17,11 +17,13 @@ function Line({ className, dashed }: { className: string; dashed?: boolean }) {
 
 export function Legend({ synthetic }: { synthetic: boolean }) {
   return (
-    <section
+    <details
+      open
       aria-label="Map legend"
-      className="bg-card/95 text-muted-foreground absolute top-2 right-2 z-10 rounded-md border px-3 py-2 text-xs"
+      className="bg-card/95 text-muted-foreground absolute top-2 right-2 z-10 rounded-md border px-3 py-1.5 text-xs"
     >
-      <ul className="grid gap-1">
+      <summary className="text-foreground cursor-pointer py-0.5 font-medium">Legend</summary>
+      <ul className="mt-1 grid gap-1">
         <li className="flex items-center gap-2">
           <Line className="road-edge" /> Road (arrow = direction)
         </li>
@@ -29,10 +31,16 @@ export function Legend({ synthetic }: { synthetic: boolean }) {
           <Line className="road-edge on-route" /> Route (selected solution)
         </li>
         <li className="flex items-center gap-2">
+          <Line className="road-edge alt-route" dashed /> Comparison run route (dotted)
+        </li>
+        <li className="flex items-center gap-2">
           <Line className="road-edge congested" /> Congested (≥{CONGESTION_RATIO}× base time)
         </li>
         <li className="flex items-center gap-2">
           <Line className="road-edge closed" dashed /> Closed / incident
+        </li>
+        <li className="flex items-center gap-2">
+          <Line className="road-edge selected" /> Selected road
         </li>
         <li className="flex items-center gap-2">
           <span className="road-node depot ml-1 !h-3 !w-3" aria-hidden="true" /> Depot
@@ -44,6 +52,6 @@ export function Legend({ synthetic }: { synthetic: boolean }) {
       {synthetic && (
         <p className="text-text-muted mt-2 border-t pt-1">Synthetic network: not geography</p>
       )}
-    </section>
+    </details>
   );
 }

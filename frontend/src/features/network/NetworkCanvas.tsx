@@ -21,8 +21,8 @@ const nodeTypes: NodeTypes = { road: RoadNodeView };
 const edgeTypes: EdgeTypes = { road: RoadEdgeView };
 const NO_ROUTES: RouteOverlay[] = [];
 
-function markerColor(traffic: string, onRoute: boolean): string {
-  if (onRoute) return "var(--tq-route)";
+function markerColor(traffic: string, onRoute: boolean, dimmed: boolean): string {
+  if (onRoute) return dimmed ? "var(--tq-road)" : "var(--tq-route)";
   if (traffic === "closed") return "var(--tq-incident)";
   if (traffic === "congested") return "var(--tq-traffic-congested)";
   return "var(--tq-road)";
@@ -31,9 +31,11 @@ function markerColor(traffic: string, onRoute: boolean): string {
 export function NetworkCanvas({
   scenario,
   routes = NO_ROUTES,
+  altRoutes = NO_ROUTES,
 }: {
   scenario: ScenarioOut;
   routes?: RouteOverlay[];
+  altRoutes?: RouteOverlay[];
 }) {
   const selection = useWorkspace((s) => s.selection);
   const select = useWorkspace((s) => s.select);
@@ -41,6 +43,7 @@ export function NetworkCanvas({
   const { nodes, edges } = useMemo(() => {
     const flow = toFlow(scenario, {
       routes,
+      altRoutes,
       selectedNodeId: selection?.kind === "node" ? selection.id : null,
       selectedEdgeId: selection?.kind === "edge" ? selection.id : null,
       selectedVehicleId: selection?.kind === "route" ? selection.vehicleId : null,
@@ -53,11 +56,11 @@ export function NetworkCanvas({
           type: MarkerType.ArrowClosed,
           width: 12,
           height: 12,
-          color: markerColor(e.data!.traffic, e.data!.onRoute),
+          color: markerColor(e.data!.traffic, e.data!.onRoute, e.data!.dimmed),
         },
       })),
     };
-  }, [scenario, routes, selection]);
+  }, [scenario, routes, altRoutes, selection]);
 
   return (
     <div

@@ -11,6 +11,7 @@ import json
 import secrets
 import time
 import uuid
+from datetime import datetime
 from typing import Any
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
@@ -47,16 +48,20 @@ ERRORS = {
 }
 
 
+def server_caps(algorithm_id: str, limits: Limits) -> dict[str, float]:
+    """Server-side maxima per config key (on top of each algorithm's own ranges)."""
+    caps: dict[str, float] = {"time_limit_s": limits.max_time_limit_s}
+    if algorithm_id == "simulated_annealing":
+        caps["max_iterations"] = limits.max_sa_iterations
+    if algorithm_id == "qpso_hybrid":
+        caps["swarm_size"] = limits.max_qpso_swarm
+        caps["iterations"] = limits.max_qpso_iterations
+    return caps
+
+
 def check_limits(algorithm_id: str, cfg: dict[str, Any], limits: Limits) -> None:
     """Bound execution cost per request (SPEC_FULL section 15)."""
-    caps = {
-        "time_limit_s": limits.max_time_limit_s,
-        "max_iterations": limits.max_sa_iterations
-        if algorithm_id == "simulated_annealing"
-        else None,
-        "swarm_size": limits.max_qpso_swarm if algorithm_id == "qpso_hybrid" else None,
-        "iterations": limits.max_qpso_iterations if algorithm_id == "qpso_hybrid" else None,
-    }
+    caps = server_caps(algorithm_id, limits)
     over = {
         k: {"value": cfg[k], "limit": cap}
         for k, cap in caps.items()
@@ -157,12 +162,21 @@ def list_runs(
     algorithm_id: str | None = None,
     scenario_version_id: uuid.UUID | None = None,
     suite_id: uuid.UUID | None = None,
+    scenario_id: uuid.UUID | None = Query(None, description="any version of this scenario"),
+    created_after: datetime | None = None,
+    created_before: datetime | None = None,
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     session: Session = Depends(deps.db),
 ) -> Page[RunOut]:
     flt = repo.RunFilter(
-        status.value if status else None, algorithm_id, scenario_version_id, suite_id
+        status.value if status else None,
+        algorithm_id,
+        scenario_version_id,
+        suite_id,
+        scenario_id,
+        created_after,
+        created_before,
     )
     rows, total = repo.list_runs(session, flt, limit, offset)
     return Page[RunOut](items=[run_out(r) for r in rows], total=total, limit=limit, offset=offset)

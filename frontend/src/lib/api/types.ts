@@ -243,3 +243,107 @@ export interface HealthOut {
   api_version: "v1";
   dependencies: Record<string, { status: "ok" | "unavailable" | "not_configured" }>;
 }
+
+// --- M6 additions ----------------------------------------------------------------------------
+
+export interface ParamOut {
+  key: string;
+  kind: "int" | "float" | "bool" | "enum" | "enum_list";
+  description: string;
+  minimum: number | null;
+  maximum: number | null;
+  nullable: boolean;
+  null_meaning: string;
+  choices: string[];
+  unit: string;
+  advanced: boolean;
+  default: unknown;
+}
+
+export interface AlgorithmInfoFull extends AlgorithmInfo {
+  params: ParamOut[];
+}
+
+export interface ValidationIssue {
+  code: string;
+  message: string;
+  severity: "error" | "infeasible" | "warning";
+  ref: string | null;
+}
+
+export interface ScenarioValidation {
+  valid: boolean;
+  feasible_so_far: boolean;
+  issues: ValidationIssue[];
+  strongly_connected_components: number | null;
+  unreachable_location_pairs: number | null;
+  total_demand: number | null;
+  total_capacity: number | null;
+}
+
+export interface RunFilters {
+  scenario_id?: string;
+  scenario_version_id?: string;
+  algorithm_id?: string;
+  status?: RunStatus;
+  suite_id?: string;
+  created_after?: string;
+  created_before?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface SuiteSpec {
+  algorithm_id: AlgorithmId;
+  config: Record<string, unknown>;
+  label?: string;
+}
+
+export interface SuiteOut {
+  id: string;
+  name: string;
+  scenario_version_id: string;
+  specs: {
+    label: string;
+    algorithm_id: AlgorithmId;
+    algorithm_version: string;
+    config: Record<string, unknown>;
+  }[];
+  seeds: number[];
+  repetitions: number;
+  budget_policy: string;
+  created_at: string;
+  status_counts: Partial<Record<RunStatus, number>>;
+  run_ids: string[];
+}
+
+export interface SuiteSummary {
+  spec: string;
+  algorithm_id: string;
+  n: number;
+  feasible_count: number;
+  feasible_rate: number;
+  objective_mean: number | null;
+  objective_median: number | null;
+  objective_std: number | null;
+  objective_best: number | null;
+  objective_worst: number | null;
+  elapsed_mean_s: number;
+  elapsed_median_s: number;
+  gap_mean_percent: number | null;
+}
+
+export interface SuiteComparison {
+  metadata: Record<string, unknown>;
+  reference: {
+    kind: "proven_optimum" | "best_observed_heuristic";
+    objective: number;
+    source_spec: string;
+    source_seed: number | null;
+    source_repetition: number;
+  } | null;
+  quantity_kinds: Record<string, "measured" | "derived">;
+  summaries: SuiteSummary[];
+  status_counts_by_spec: Record<string, Partial<Record<RunStatus, number>>>;
+  complete: boolean;
+}

@@ -1,7 +1,11 @@
 "use client";
 
 import { EmptyState, ErrorState, LoadingState, Section, Stat } from "@/components/status";
+import { Label } from "@/components/ui/label";
+import { NativeSelect } from "@/components/ui/native-select";
 import { trafficState } from "@/features/network/toFlow";
+import { useRuns } from "@/lib/api/hooks";
+import { ALGORITHM_LABELS } from "./RunLauncher";
 import type { RunOut, RunResultOut, ScenarioOut } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { useWorkspace, type Selection } from "@/stores/workspace";
@@ -109,12 +113,16 @@ export function Inspector({
   result,
   resultLoading,
   resultError,
+  compareRun,
+  compareResult,
 }: {
   scenario: ScenarioOut;
   run: RunOut | undefined;
   result: RunResultOut | undefined;
   resultLoading: boolean;
   resultError: Error | null;
+  compareRun?: RunOut;
+  compareResult?: RunResultOut;
 }) {
   const selection = useWorkspace((s) => s.selection);
   const select = useWorkspace((s) => s.select);
@@ -195,6 +203,86 @@ export function Inspector({
           </div>
         )}
       </Section>
+      {run && result && (
+        <CompareSection
+          run={run}
+          result={result}
+          compareRun={compareRun}
+          compareResult={compareResult}
+        />
+      )}
     </>
+  );
+}
+
+/** Current (active) solution versus another completed run on the same scenario version. */
+function CompareSection({
+  run,
+  result,
+  compareRun,
+  compareResult,
+}: {
+  run: RunOut;
+  result: RunResultOut;
+  compareRun?: RunOut;
+  compareResult?: RunResultOut;
+}) {
+  const runs = useRuns(run.scenario_version_id);
+  const compareRunId = useWorkspace((s) => s.compareRunId);
+  const setCompareRun = useWorkspace((s) => s.setCompareRun);
+  const options = (runs.data?.items ?? []).filter(
+    (r) => r.id !== run.id && r.status === "COMPLETED",
+  );
+  const delta =
+    compareResult?.objective != null && result.objective != null
+      ? result.objective - compareResult.objective
+      : null;
+  return (
+    <Section title="Compare routes">
+      <div className="grid gap-2 text-xs">
+        <Label htmlFor="compare-run" className="text-xs">
+          Compare with another completed run on this version
+        </Label>
+        <NativeSelect
+          id="compare-run"
+          value={compareRunId ?? ""}
+          onChange={(e) => setCompareRun(e.target.value || null)}
+        >
+          <option value="">None</option>
+          {options.map((r) => (
+            <option key={r.id} value={r.id}>
+              {ALGORITHM_LABELS[r.algorithm_id] ?? r.algorithm_id} · seed {r.seed ?? "n/a"} ·{" "}
+              {r.id.slice(0, 6)}
+            </option>
+          ))}
+        </NativeSelect>
+        {compareRun && compareResult && (
+          <dl className="grid grid-cols-2 gap-2">
+            <Stat label="This run" value={result.objective} unit="min" digits={3} kind="derived" />
+            <Stat
+              label="Comparison"
+              value={compareResult.objective}
+              unit="min"
+              digits={3}
+              kind="derived"
+            />
+            <Stat
+              label="Difference"
+              value={delta === null ? null : `${delta > 0 ? "+" : ""}${delta.toFixed(3)}`}
+              unit="min"
+            />
+            <Stat
+              label="Vehicles used"
+              value={`${result.evaluation?.routes.length ?? 0} vs ${compareResult.evaluation?.routes.length ?? 0}`}
+            />
+          </dl>
+        )}
+        {compareRun && (
+          <p className="text-text-muted text-[11px]">
+            Comparison routes are drawn dotted on the map.
+          </p>
+        )}
+      </div>
+    </Section>
   );
 }

@@ -2,7 +2,7 @@
 
 import { EmptyState, ErrorState, RunStatusBadge, Section, Stat } from "@/components/status";
 import { Button } from "@/components/ui/button";
-import { useRunEvents } from "@/lib/api/events";
+import { useRunEventLog } from "@/lib/api/events";
 import { isTerminal, useCancelRun, useRun, useRuns } from "@/lib/api/hooks";
 import type { RunEvent, RunOut } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,7 @@ function describe(e: RunEvent): string {
 }
 
 function ActiveRun({ run }: { run: RunOut }) {
-  const log = useRunEvents(run.id);
+  const log = useRunEventLog(run.id);
   const cancel = useCancelRun();
   const progress = log.latestProgress ?? run.progress;
   const terminal = isTerminal(run);

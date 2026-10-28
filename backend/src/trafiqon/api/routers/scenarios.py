@@ -18,6 +18,8 @@ from trafiqon.api.schemas import (
     ScenarioOut,
     ScenarioRecord,
     ScenarioUpdate,
+    ScenarioValidation,
+    ValidationIssueOut,
     VersionCreate,
     VersionOut,
     VersionSummary,
@@ -28,6 +30,8 @@ from trafiqon.domain.validation import Severity, validate_scenario
 from trafiqon.fixtures import BUILTIN_SCENARIOS, load_builtin
 from trafiqon.persistence import scenarios as repo
 from trafiqon.persistence.models import ScenarioRow, ScenarioVersionRow
+from trafiqon.routing import build_scenario_matrix, check_reachability
+from trafiqon.routing.connectivity import strongly_connected_components
 from trafiqon.settings import Settings
 
 router = APIRouter(prefix="/api/v1/scenarios", tags=["scenarios"])
@@ -125,6 +129,75 @@ def create_scenario(
     session.commit()
     response.headers["Location"] = f"/api/v1/scenarios/{row.id}"
     return _detail(session, row)
+
+
+@router.post("/validate", response_model=ScenarioValidation, responses=ERRORS)
+def validate(body: ScenarioData, settings: Settings = Depends(deps.settings)) -> ScenarioValidation:
+    """Check content without saving: structure, capacity, reachability and connectivity.
+    `feasible_so_far` means no infeasibility was DETECTED; it does not prove a solution
+    exists (bin-packing can still fail)."""
+    issues: list[ValidationIssueOut] = []
+    lim = settings.limits
+    for kind, count, maximum in (
+        ("nodes", len(body.graph.nodes), lim.max_nodes),
+        ("edges", len(body.graph.edges), lim.max_edges),
+        ("customers", len(body.customers), lim.max_customers),
+        ("vehicles", len(body.vehicles), lim.max_vehicles),
+    ):
+        if count > maximum:
+            issues.append(
+                ValidationIssueOut(
+                    code="scenario_too_large",
+                    severity="error",
+                    message=f"{count} {kind} exceeds limit {maximum}",
+                )
+            )
+    raw = body.model_dump()
+    raw.update(id="draft", name="draft")
+    try:
+        scenario = scenario_from_dict(raw)
+    except (GraphError, KeyError, ValueError) as exc:
+        issues.append(ValidationIssueOut(code="invalid_graph", severity="error", message=str(exc)))
+        return ScenarioValidation(
+            valid=False,
+            feasible_so_far=False,
+            issues=issues,
+            strongly_connected_components=None,
+            unreachable_location_pairs=None,
+            total_demand=None,
+            total_capacity=None,
+        )
+    for i in validate_scenario(scenario):
+        issues.append(
+            ValidationIssueOut(code=i.code, message=i.message, ref=i.ref, severity=i.severity.value)
+        )
+    valid = not any(i.severity == "error" for i in issues)
+    unreachable_pairs = None
+    if valid:
+        matrix = build_scenario_matrix(scenario)
+        unreachable_pairs = len(matrix.unreachable_pairs())
+        for r in check_reachability(scenario, matrix):
+            issues.append(
+                ValidationIssueOut(code=r.code, message=r.message, ref=r.ref, severity="infeasible")
+            )
+    components = strongly_connected_components(scenario.graph)
+    if components > 1:
+        issues.append(
+            ValidationIssueOut(
+                code="not_strongly_connected",
+                severity="warning",
+                message=f"open roads form {components} strongly connected components",
+            )
+        )
+    return ScenarioValidation(
+        valid=valid,
+        feasible_so_far=valid and not any(i.severity == "infeasible" for i in issues),
+        issues=issues,
+        strongly_connected_components=components,
+        unreachable_location_pairs=unreachable_pairs,
+        total_demand=sum(c.demand for c in scenario.customers),
+        total_capacity=sum(v.capacity for v in scenario.vehicles),
+    )
 
 
 @router.get("/{scenario_id}", response_model=ScenarioDetail, responses=ERRORS)

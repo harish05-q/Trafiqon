@@ -1,10 +1,14 @@
 "use client";
 
-// Server-Sent Events for run progress. The browser's EventSource reconnects on its own and
-// resends Last-Event-ID, so a dropped connection resumes without losing events.
+// Server-Sent Events for run progress. ONE EventSource per active run is opened by
+// <ActiveRunStream/> (mounted in the app shell); consumers read the shared log from a store.
+// The browser's EventSource reconnects on its own and resends Last-Event-ID; the reducer
+// dedupes any replayed events by id.
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useReducer } from "react";
+import { useEffect } from "react";
+import { create } from "zustand";
 
+import { useWorkspace } from "@/stores/workspace";
 import { api } from "./client";
 import { keys } from "./hooks";
 import type { RunEvent, RunProgress } from "./types";
@@ -69,20 +73,42 @@ export function eventReducer(state: EventLog, action: EventAction): EventLog {
   }
 }
 
-export function useRunEvents(runId: string | null): EventLog {
-  const qc = useQueryClient();
-  const [log, dispatch] = useReducer(eventReducer, runId, initialLog);
+interface EventLogStore {
+  logs: Record<string, EventLog>;
+  dispatch: (runId: string, action: EventAction) => void;
+}
 
+export const useEventLogs = create<EventLogStore>()((set) => ({
+  logs: {},
+  dispatch: (runId, action) =>
+    set((s) => ({
+      logs: { ...s.logs, [runId]: eventReducer(s.logs[runId] ?? initialLog(runId), action) },
+    })),
+}));
+
+const EMPTY = initialLog();
+
+export function useRunEventLog(runId: string | null): EventLog {
+  return useEventLogs((s) => (runId ? (s.logs[runId] ?? EMPTY) : EMPTY));
+}
+
+/** Opens the SSE stream for `runId` and feeds the shared log. Mount once per run. */
+export function useRunEventStream(runId: string | null): void {
+  const qc = useQueryClient();
+  const dispatch = useEventLogs((s) => s.dispatch);
   useEffect(() => {
-    dispatch({ type: "reset", runId });
     if (!runId || typeof EventSource === "undefined") return;
+    dispatch(runId, { type: "reset", runId });
     const source = new EventSource(api.runEventsUrl(runId));
-    source.onopen = () => dispatch({ type: "connection", state: "open" });
+    source.onopen = () => dispatch(runId, { type: "connection", state: "open" });
     source.onerror = () =>
-      dispatch({ type: "connection", state: source.readyState === 2 ? "closed" : "reconnecting" });
+      dispatch(runId, {
+        type: "connection",
+        state: source.readyState === 2 ? "closed" : "reconnecting",
+      });
     const onEvent = (msg: MessageEvent<string>) => {
       const event = JSON.parse(msg.data) as RunEvent;
-      dispatch({ type: "event", event });
+      dispatch(runId, { type: "event", event });
       if (event.kind === "lifecycle") {
         qc.invalidateQueries({ queryKey: keys.run(runId) });
         qc.invalidateQueries({ queryKey: ["runs"] });
@@ -90,12 +116,17 @@ export function useRunEvents(runId: string | null): EventLog {
     };
     for (const t of STREAM_TYPES) source.addEventListener(t, onEvent as EventListener);
     source.addEventListener("end", () => {
-      dispatch({ type: "end" });
+      dispatch(runId, { type: "end" });
       qc.invalidateQueries({ queryKey: keys.run(runId) });
       source.close();
     });
     return () => source.close();
-  }, [runId, qc]);
+  }, [runId, qc, dispatch]);
+}
 
-  return log;
+/** Streams events for the workspace's active run, wherever the user navigates. */
+export function ActiveRunStream() {
+  const activeRunId = useWorkspace((s) => s.activeRunId);
+  useRunEventStream(activeRunId);
+  return null;
 }

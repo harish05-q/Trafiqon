@@ -63,7 +63,7 @@ Adapt to the existing repo, but keep these logical boundaries.
 - API dev server: `cd backend && TRAFIQON_DATABASE_URL=... uv run uvicorn trafiqon.api.app:app --port 8000`
 - Worker: `cd backend && TRAFIQON_DATABASE_URL=... uv run python -m trafiqon.worker.main [--migrate]`
 - Web dev server: `cd frontend && npm run dev` (API URL from `NEXT_PUBLIC_API_BASE_URL`, default http://localhost:8000)
-- E2E: `cd frontend && npx playwright test`
+- E2E: `cd frontend && npx playwright test` (needs `docker compose up -d db`; starts API :8100, a worker, prod build :3100; uses DB `trafiqon_e2e`)
 - Stack: `docker compose up` (M4: `db` service only; api/worker/web services come in M8)
 
 ## End-of-milestone report format
