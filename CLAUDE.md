@@ -59,6 +59,8 @@ Adapt to the existing repo, but keep these logical boundaries.
 - Backend lint: `cd backend && uv run ruff check . && uv run ruff format --check .`
 - Frontend test: `cd frontend && npm test`
 - Frontend lint/build: `cd frontend && npm run lint && npm run build`
+- API dev server: `cd backend && uv run uvicorn trafiqon.api.app:app --port 8000`
+- Web dev server: `cd frontend && npm run dev` (API URL from `NEXT_PUBLIC_API_BASE_URL`, default http://localhost:8000)
 - E2E: `cd frontend && npx playwright test`
 - Stack: `docker compose up`
 

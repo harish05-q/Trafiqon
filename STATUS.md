@@ -3,14 +3,14 @@
 Update this file at the end of every work session. It is the source of truth after a context reset.
 
 ## Current milestone
-M1 done (2026-10-28). Next: M1.5 thin vertical slice (D2). Nothing committed yet (git repo initialised, no commits).
+M1.5 done (2026-10-28), not yet committed (M0+M1 are in commit ee7a5ae). Next: M2 (OR-Tools + SA + common interface).
 
 ## Milestones
 | # | Name | State | Acceptance criteria met |
 |---|---|---|---|
 | 0 | Inspect and plan | done | Inventory, structure, conflicts, infra findings, plan, risks, slice reported (2026-10-28) |
 | 1 | Domain + routing (Dijkstra, A*) | done | All M1 criteria below; 93 tests, ruff clean (2026-10-28) |
-| 1.5 | Thin vertical slice (D2) | todo | |
+| 1.5 | Thin vertical slice (D2) | done | API + TestClient tests, Vitest, drawn path == API path checked in browser (2026-10-28) |
 | 2 | OR-Tools + SA + common interface | todo | |
 | 3 | QPSO-inspired optimizer | todo | |
 | 4 | Persistence, API, worker | todo | |
@@ -37,6 +37,8 @@ M1 done (2026-10-28). Next: M1.5 thin vertical slice (D2). Nothing committed yet
 - D3 (2026-10-28): Keep directory `frontend/` for SPEC_FULL section 5's `web` module. Add Prettier (`prettier --check`) to frontend lint in M5, as SPEC_FULL section 4 requires and CLAUDE.md's command list omits.
 - D5 (2026-10-28): The shared evaluator lives in `routing/evaluation.py` (SPEC_FULL section 5: "routing: shortest-path algorithms and route evaluation"), not `domain/`, because it needs shortest paths. Core entities are frozen dataclasses (Pydantic stays at the API boundary). NetworkX is a dev dependency, used only as a test oracle.
 - D6 (2026-10-28): Modelling rules: integer demands/capacities (OR-Tools-friendly); customers may not sit on depot nodes; a vehicle starts at its start depot and ends at one of `end_depot_ids` (default: its start depot); the evaluator still reports `objective` for capacity- or coverage-violating solutions (with `feasible=False`), but `objective=None` whenever any leg is unreachable or invalid.
+- D7 (2026-10-28): Frontend is Next.js 16.4.3 / React 19.3 (current create-next-app); its bundled docs (`frontend/node_modules/next/dist/docs`, per `frontend/AGENTS.md`) are the reference. `@types/node` pinned to ^22 to match Node 22 and vitest 5 peer range. `npm run lint` = ESLint + `prettier --check` (D3). API tests use `httpx2` (Starlette deprecates httpx for TestClient).
+- D8 (2026-10-28): The slice API serves built-in fixtures only (no DB). `/routing/shortest-path` re-validates and re-costs the found path with the shared evaluator (`evaluate_leg`) before returning it. Health reports `database: not_configured` honestly until M4.
 - D4 (2026-10-28): Docker Compose uses `postgres:18`, matching the locally installed PostgreSQL 18.1 binaries. Worker uses sync SQLAlchemy/psycopg to avoid Windows asyncio event-loop issues with psycopg async.
 
 ## Assumptions and risks
@@ -65,7 +67,16 @@ M1 done (2026-10-28). Next: M1.5 thin vertical slice (D2). Nothing committed yet
 - `cd backend && uv run pytest` -> `93 passed in 2.08s`.
 - `cd backend && uv run ruff check .` -> `All checks passed!`; `uv run ruff format --check .` -> `21 files already formatted` (after one `ruff format` + `ruff check --fix` pass for formatting and import order).
 
+2026-10-28 (M1.5):
+- `uv add fastapi "uvicorn[standard]"` -> fastapi 0.162.0, pydantic 2.14.1, starlette 1.10.0, uvicorn 0.54.0; dev `httpx2` 2.16.0.
+- `npx create-next-app@latest frontend --ts --tailwind --eslint --app --src-dir` -> next 16.4.3, react 19.3.0. Added @xyflow/react 12.12, @tanstack/react-query 5.105; dev vitest 5.0.5, @testing-library/react 16.3, jsdom 29, prettier 3.9. First vitest install failed on a peer conflict (@types/node ^20 vs vitest); fixed by @types/node ^22.
+- `cd backend && uv run pytest` -> `108 passed` (93 unit + 15 API). `uv run ruff check .` -> `All checks passed!`; `ruff format --check .` -> `27 files already formatted`.
+- `cd frontend && npm test` -> `Test Files 2 passed, Tests 8 passed`. `npm run lint` -> no ESLint output, `All matched files use Prettier code style!`. `npm run build` -> `Compiled successfully`, 4/4 static pages.
+- Browser check (built-in browser, API on :8000 + `next dev` on :3000): Incident Response n2_1 -> n2_2: API edges `n2_1->n3_1, n3_1->n3_2, n3_2->n2_2` (6.5 min) == React Flow `.on-path` edges == listed edges; the 3 incident edges render as `.closed`. Congested City n0_0 -> n5_5: drawn on-path set == API set, 10.65 min shown. At 1280x760 all nodes fit in view after a scenario switch. Note: with the pane hidden, React Flow does not measure nodes and draws no edges (environmental, not an app bug).
+
 ## Known defects and open items
+- Slice UI is minimal: fixed-width side panels (cramped below ~1000px), no light theme, no keyboard path selection on the canvas (selects work via keyboard). M5 replaces it with the real shell.
+- No Playwright yet (M6); the drawn-path check above was manual via the built-in browser plus a Vitest wiring test.
 - Nothing committed yet.
 - Scenario `settings` holds traffic/incident metadata as a free-form dict; algorithm config is not on the scenario (it belongs to runs, M2/M4).
 - Docs so far: `docs/mathematical_model.md`, `backend/README.md`. No root README yet (M8).

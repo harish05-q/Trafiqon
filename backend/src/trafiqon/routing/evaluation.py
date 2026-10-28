@@ -11,7 +11,7 @@ import math
 from collections import Counter
 from dataclasses import dataclass
 
-from trafiqon.domain.models import Edge, Scenario
+from trafiqon.domain.models import Edge, Graph, Scenario
 from trafiqon.domain.solution import Solution, VehicleRoute
 from trafiqon.routing.cost_matrix import CostMatrix, build_scenario_matrix
 from trafiqon.routing.shortest_path import Path, shortest_path
@@ -188,7 +188,7 @@ def _evaluate_route(scenario, route: VehicleRoute, matrix, customers, vehicles, 
             if route.legs is None:
                 leg, leg_violation = _shortest_leg(scenario, matrix, a, b, vid)
             else:
-                leg, leg_violation = _explicit_leg(scenario, route.legs[k], a, b, vid)
+                leg, leg_violation = evaluate_leg(scenario.graph, route.legs[k], a, b, vid)
             if leg_violation:
                 violations.append(leg_violation)
             legs.append(leg)
@@ -225,8 +225,10 @@ def _shortest_leg(scenario: Scenario, matrix: CostMatrix, a: str, b: str, vid: s
     return _from_path(path), None
 
 
-def _explicit_leg(scenario: Scenario, edge_ids: tuple[str, ...], a: str, b: str, vid: str):
-    graph = scenario.graph
+def evaluate_leg(
+    graph: Graph, edge_ids: tuple[str, ...], a: str, b: str, vid: str | None = None
+) -> tuple[LegEvaluation, Violation | None]:
+    """Validate and cost one explicit edge path from node `a` to node `b`."""
     invalid = LegEvaluation(a, b, (), tuple(edge_ids), None, None)
     edges: list[Edge] = []
     for eid in edge_ids:

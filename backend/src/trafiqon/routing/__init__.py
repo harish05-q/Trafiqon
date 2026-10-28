@@ -12,6 +12,7 @@ from trafiqon.routing.evaluation import (
     LegEvaluation,
     RouteEvaluation,
     Violation,
+    evaluate_leg,
     evaluate_solution,
 )
 from trafiqon.routing.shortest_path import (
@@ -38,6 +39,7 @@ __all__ = [
     "build_scenario_matrix",
     "check_reachability",
     "dijkstra",
+    "evaluate_leg",
     "evaluate_solution",
     "shortest_path",
     "straight_line_heuristic",

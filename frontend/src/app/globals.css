@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+/* Dark theme tokens from docs/DESIGN.md. The light analytical theme and the full system arrive in M5. */
+:root {
+  --background: #111210;
+  --surface: #191b17;
+  --surface-2: #20221e;
+  --text: #e9e5da;
+  --text-secondary: #a5a397;
+  --text-muted: #77786f;
+  --border: #363830;
+  --accent: #ff6b35;
+  --incident: #d94f35;
+  --road: #5c5e55;
+  --route: #ff6b35;
+  --sage: #727c67;
+  --ochre: #b78b48;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--text);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-incident: var(--incident);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+.control {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 0.875rem;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Road network */
+.react-flow {
+  --xy-background-color: var(--background);
+}
+
+.road-edge path.react-flow__edge-path {
+  stroke: var(--road);
+  stroke-width: 1.5;
+}
+.road-edge.closed path.react-flow__edge-path {
+  stroke: var(--incident);
+  stroke-dasharray: 6 4;
+}
+.road-edge.on-path path.react-flow__edge-path {
+  stroke: var(--route);
+  stroke-width: 4;
+}
+
+.road-node {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: var(--surface-2);
+  border: 1.5px solid var(--road);
+  position: relative;
+}
+.road-node.customer {
+  border-color: var(--sage);
+  background: var(--sage);
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+.road-node.depot {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  border-color: var(--ochre);
+  background: var(--ochre);
+}
+.road-node.on-path {
+  border-color: var(--route);
+}
+.road-node.endpoint {
+  box-shadow:
+    0 0 0 3px var(--background),
+    0 0 0 5px var(--route);
+}
+.road-node-label {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 9px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.road-node.customer .road-node-label {
+  transform: translateX(-50%) rotate(-45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
