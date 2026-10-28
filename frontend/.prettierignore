@@ -3,3 +3,4 @@ node_modules
 package-lock.json
 next-env.d.ts
 public
+src/components/ui

@@ -73,3 +73,173 @@ export interface ShortestPathResponse {
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: unknown };
 }
+
+// --- persisted resources (backend/src/trafiqon/api/schemas.py) ---------------------------
+
+export type ScenarioData = Omit<ScenarioOut, "id" | "name">;
+
+export interface VersionSummary {
+  id: string;
+  scenario_id: string;
+  version_number: number;
+  fingerprint: string;
+  synthetic: boolean;
+  node_count: number;
+  edge_count: number;
+  customer_count: number;
+  vehicle_count: number;
+  note: string;
+  created_at: string;
+}
+
+export interface VersionOut extends VersionSummary {
+  data: ScenarioOut;
+}
+
+export interface ScenarioRecord {
+  id: string;
+  name: string;
+  description: string;
+  current_version_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScenarioDetail extends ScenarioRecord {
+  versions: VersionSummary[];
+}
+
+export interface Page<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export type AlgorithmId = "ortools_cvrp" | "simulated_annealing" | "qpso_hybrid";
+
+export interface AlgorithmInfo {
+  id: AlgorithmId;
+  version: string;
+  uses_seed: boolean;
+  defaults: Record<string, unknown>;
+}
+
+export type RunStatus = "QUEUED" | "RUNNING" | "CANCELLING" | "CANCELLED" | "COMPLETED" | "FAILED";
+export const TERMINAL_STATUSES: readonly RunStatus[] = ["CANCELLED", "COMPLETED", "FAILED"];
+
+export interface RunProgress {
+  iteration: number;
+  evaluations: number | null;
+  elapsed_s: number;
+  best_objective: number | null;
+  current_objective: number | null;
+  has_feasible: boolean;
+  message: string;
+  attempt: number;
+}
+
+export interface RunOut {
+  id: string;
+  scenario_version_id: string;
+  suite_id: string | null;
+  suite_spec: string | null;
+  repetition: number | null;
+  algorithm_id: AlgorithmId;
+  algorithm_version: string;
+  config: Record<string, unknown>;
+  seed: number | null;
+  status: RunStatus;
+  attempt: number;
+  max_attempts: number;
+  created_at: string;
+  started_at: string | null;
+  cancel_requested_at: string | null;
+  finished_at: string | null;
+  progress: RunProgress | null;
+  termination_reason: string | null;
+  error: { code: string; message?: string; type?: string } | null;
+}
+
+export interface RunCreate {
+  scenario_version_id: string;
+  algorithm_id: AlgorithmId;
+  config?: Record<string, unknown>;
+  seed?: number | null;
+  idempotency_key?: string;
+}
+
+export interface LegResult {
+  source_node: string;
+  target_node: string;
+  node_ids: string[];
+  edge_ids: string[];
+  travel_time: number | null;
+  distance: number | null;
+}
+
+export interface RouteResult {
+  vehicle_id: string;
+  customer_ids: string[];
+  load: number;
+  capacity: number | null;
+  travel_time: number | null;
+  distance: number | null;
+  legs: LegResult[];
+}
+
+export interface HistoryPoint {
+  iteration: number;
+  evaluations: number | null;
+  elapsed_s: number;
+  current_objective: number | null;
+  best_objective: number | null;
+}
+
+export interface RunResultOut {
+  run_id: string;
+  feasible: boolean;
+  objective: number | null;
+  total_distance: number | null;
+  solution: {
+    routes: {
+      vehicle_id: string;
+      customer_ids: string[];
+      start_depot_id: string;
+      end_depot_id: string;
+    }[];
+  } | null;
+  evaluation: {
+    feasible: boolean;
+    objective: number | null;
+    total_distance: number | null;
+    evaluator_version: string;
+    violations: { code: string; message: string }[];
+    routes: RouteResult[];
+  } | null;
+  iterations: number;
+  evaluations: number | null;
+  elapsed_s: number;
+  time_to_first_feasible_s: number | null;
+  termination_reason: string;
+  optimality: "proven_optimal" | "not_proven";
+  seed: number | null;
+  history: HistoryPoint[];
+  diagnostics: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface RunEvent {
+  id: number;
+  kind: "lifecycle" | "progress";
+  type: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface HealthOut {
+  status: "ok";
+  version: string;
+  api_version: "v1";
+  dependencies: Record<string, { status: "ok" | "unavailable" | "not_configured" }>;
+}

@@ -5,6 +5,9 @@
       "name": "api",
       "runtimeExecutable": "uv",
       "runtimeArgs": ["--directory", "backend", "run", "uvicorn", "trafiqon.api.app:app", "--port", "8000"],
+      "env": {
+        "TRAFIQON_DATABASE_URL": "postgresql+psycopg://trafiqon:trafiqon@localhost:5432/trafiqon"
+      },
       "port": 8000
     },
     {

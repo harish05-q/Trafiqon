@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -14,13 +15,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
+    // data-theme starts dark (command center default); the persisted choice is applied on
+    // the client by ThemeSync, hence suppressHydrationWarning on this element only.
     <html
       lang="en"
       data-theme="dark"
-      className={`${inter.variable} ${mono.variable} h-full antialiased`}
+      suppressHydrationWarning
+      className={`${inter.variable} ${mono.variable} h-full`}
     >
-      <body className="min-h-full">
-        <Providers>{children}</Providers>
+      <body>
+        <Providers>
+          <TooltipProvider>{children}</TooltipProvider>
+        </Providers>
       </body>
     </html>
   );

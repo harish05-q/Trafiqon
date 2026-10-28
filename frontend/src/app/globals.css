@@ -1,118 +1,273 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-/* Dark theme tokens from docs/DESIGN.md. The light analytical theme and the full system arrive in M5. */
-:root {
-  --background: #111210;
-  --surface: #191b17;
-  --surface-2: #20221e;
-  --text: #e9e5da;
-  --text-secondary: #a5a397;
-  --text-muted: #77786f;
-  --border: #363830;
-  --accent: #ff6b35;
-  --incident: #d94f35;
-  --road: #5c5e55;
-  --route: #ff6b35;
-  --sage: #727c67;
-  --ochre: #b78b48;
+/*
+ * TRAFIQON design tokens: the single source for colors, type, radii and borders.
+ * Exact values from docs/SPEC_FULL.md 13.2 / 13.3 (checked by src/styles/tokens.test.ts).
+ * Values marked "derived" are not in the spec; each has a functional reason noted inline.
+ * shadcn/ui variables (--background, --primary, ...) are mapped onto these tokens.
+ */
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  /* spec 13.2 */
+  --tq-bg: #111210;
+  --tq-surface: #191b17;
+  --tq-surface-2: #20221e;
+  --tq-elevated: #292b25;
+  --tq-text: #e9e5da;
+  --tq-text-secondary: #a5a397;
+  --tq-text-muted: #77786f;
+  --tq-border: #363830;
+  --tq-signal: #ff6b35; /* primary accent, selected route, primary interaction */
+  --tq-vermilion: #d94f35; /* secondary accent */
+  --tq-ochre: #b78b48; /* analytical highlight */
+  --tq-sage: #727c67; /* secondary data */
+  --tq-traffic-normal: #78a083;
+  --tq-traffic-congested: #d9b45b;
+  --tq-incident: #d94f35;
+  --tq-route: #ff6b35;
+  --tq-disabled: #77786f;
+  /* derived */
+  --tq-road: #5c5e55; /* "subdued graphite" ordinary road stroke (13.6) */
+  --tq-signal-fill: #ff6b35; /* filled controls (buttons) */
+  --tq-on-signal: #111210; /* text on signal fills: 6.6:1 */
+  /* experiment series palette: deliberately disjoint from traffic semantics (13.7) */
+  --tq-series-1: #7e93a8;
+  --tq-series-2: #9c7a97;
+  --tq-series-3: #5f9c96;
+  --tq-series-4: #a9a59b;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  /* spec 13.3 */
+  --tq-bg: #f3f0e8;
+  --tq-surface: #faf8f2;
+  --tq-surface-2: #e9e4d8;
+  --tq-text: #252722;
+  --tq-text-secondary: #65665d;
+  --tq-border: #d5d0c3;
+  --tq-signal: #d94f35; /* light primary accent */
+  --tq-sage: #727c67; /* light secondary accent */
+  /* derived for the light theme (the spec lists only the eight tokens above) */
+  --tq-elevated: #fffdf8;
+  --tq-text-muted: #6f7067;
+  --tq-vermilion: #a83a24; /* darker so incidents stay distinct from the vermilion accent */
+  --tq-ochre: #8f6a2f;
+  --tq-traffic-normal: #4f7a5c;
+  --tq-traffic-congested: #a47f1f;
+  --tq-incident: #a83a24;
+  --tq-route: #d94f35;
+  --tq-disabled: #8d8e85;
+  --tq-road: #a8a496;
+  /* The spec light accent (#d94f35) cannot carry AA small text in white (4.1:1) or black;
+     filled controls use this darker fill instead (white text 5.4:1). Strokes keep #d94f35. */
+  --tq-signal-fill: #b8432c;
+  --tq-on-signal: #ffffff;
+  --tq-series-1: #4f6b86;
+  --tq-series-2: #7d5878;
+  --tq-series-3: #3c7a74;
+  --tq-series-4: #77746b;
+}
+
+:root,
+[data-theme="dark"],
+[data-theme="light"] {
+  /* shadcn/ui mapping */
+  --background: var(--tq-bg);
+  --foreground: var(--tq-text);
+  --card: var(--tq-surface);
+  --card-foreground: var(--tq-text);
+  --popover: var(--tq-elevated);
+  --popover-foreground: var(--tq-text);
+  --primary: var(--tq-signal-fill);
+  --primary-foreground: var(--tq-on-signal);
+  --secondary: var(--tq-surface-2);
+  --secondary-foreground: var(--tq-text);
+  --muted: var(--tq-surface-2);
+  --muted-foreground: var(--tq-text-secondary);
+  --accent: var(--tq-elevated);
+  --accent-foreground: var(--tq-text);
+  --destructive: var(--tq-incident);
+  --border: var(--tq-border);
+  --input: var(--tq-border);
+  --ring: var(--tq-signal);
+  --radius: 0.25rem;
 }
 
 @theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+  --font-heading: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
   --color-background: var(--background);
-  --color-foreground: var(--text);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-secondary: var(--text-secondary);
-  --color-muted: var(--text-muted);
-  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
-  --color-incident: var(--incident);
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains-mono);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-surface: var(--tq-surface);
+  --color-surface-2: var(--tq-surface-2);
+  --color-elevated: var(--tq-elevated);
+  --color-text-muted: var(--tq-text-muted);
+  --color-signal: var(--tq-signal);
+  --color-vermilion: var(--tq-vermilion);
+  --color-ochre: var(--tq-ochre);
+  --color-sage: var(--tq-sage);
+  --color-traffic-normal: var(--tq-traffic-normal);
+  --color-traffic-congested: var(--tq-traffic-congested);
+  --color-incident: var(--tq-incident);
+  --color-route: var(--tq-route);
+  --color-road: var(--tq-road);
+  --color-disabled: var(--tq-disabled);
+  --color-series-1: var(--tq-series-1);
+  --color-series-2: var(--tq-series-2);
+  --color-series-3: var(--tq-series-3);
+  --color-series-4: var(--tq-series-4);
+
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) * 1.5);
+  --radius-xl: calc(var(--radius) * 2);
 }
 
-body {
-  background: var(--background);
-  color: var(--text);
-  font-family: var(--font-inter), system-ui, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground font-sans text-sm antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--tq-signal);
+    outline-offset: 2px;
+  }
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
 }
 
-.control {
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  border-radius: 4px;
-  padding: 6px 8px;
-  font-size: 0.875rem;
-}
+/* --- Road network (React Flow) ------------------------------------------------------ */
 
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* Road network */
 .react-flow {
-  --xy-background-color: var(--background);
+  --xy-background-color: var(--tq-bg);
+  --xy-controls-button-background-color: var(--tq-surface);
+  --xy-controls-button-background-color-hover: var(--tq-elevated);
+  --xy-controls-button-color: var(--tq-text);
+  --xy-controls-button-color-hover: var(--tq-text);
+  --xy-controls-button-border-color: var(--tq-border);
 }
 
-.road-edge path.react-flow__edge-path {
-  stroke: var(--road);
+.road-edge {
+  fill: none;
+  stroke: var(--tq-road);
   stroke-width: 1.5;
+  transition:
+    stroke 120ms ease,
+    stroke-width 120ms ease;
 }
-.road-edge.closed path.react-flow__edge-path {
-  stroke: var(--incident);
-  stroke-dasharray: 6 4;
+.road-edge.congested {
+  stroke: var(--tq-traffic-congested);
+  stroke-width: 2;
 }
-.road-edge.on-path path.react-flow__edge-path {
-  stroke: var(--route);
-  stroke-width: 4;
+.road-edge.closed {
+  stroke: var(--tq-incident);
+  stroke-dasharray: 5 4;
+}
+.road-edge.on-route {
+  stroke: var(--tq-route);
+  stroke-width: 3.5;
+}
+.road-edge.on-route.dimmed {
+  stroke-opacity: 0.3;
+}
+.road-edge.selected {
+  stroke-width: 5;
+}
+.road-edge-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 12;
+  cursor: pointer;
+}
+.road-edge-group:hover .road-edge {
+  stroke-width: 3;
 }
 
 .road-node {
+  position: relative;
   width: 10px;
   height: 10px;
   border-radius: 9999px;
-  background: var(--surface-2);
-  border: 1.5px solid var(--road);
-  position: relative;
+  background: var(--tq-surface-2);
+  border: 1.5px solid var(--tq-road);
+  cursor: pointer;
 }
 .road-node.customer {
-  border-color: var(--sage);
-  background: var(--sage);
-  transform: rotate(45deg);
+  width: 12px;
+  height: 12px;
   border-radius: 2px;
+  transform: rotate(45deg);
+  background: var(--tq-sage);
+  border-color: var(--tq-sage);
 }
 .road-node.depot {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 2px;
-  border-color: var(--ochre);
-  background: var(--ochre);
+  background: var(--tq-ochre);
+  border-color: var(--tq-ochre);
 }
-.road-node.on-path {
-  border-color: var(--route);
+.road-node.on-route {
+  border-color: var(--tq-route);
 }
-.road-node.endpoint {
+.road-node.selected {
   box-shadow:
-    0 0 0 3px var(--background),
-    0 0 0 5px var(--route);
+    0 0 0 2px var(--tq-bg),
+    0 0 0 4px var(--tq-signal);
 }
 .road-node-label {
   position: absolute;
-  top: 14px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  font-family: var(--font-jetbrains-mono), monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
-  color: var(--text-secondary);
+  color: var(--tq-text-secondary);
   white-space: nowrap;
+  pointer-events: none;
 }
 .road-node.customer .road-node-label {
   transform: translateX(-50%) rotate(-45deg);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     transition: none !important;
     animation: none !important;
   }

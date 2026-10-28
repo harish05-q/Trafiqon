@@ -3,7 +3,7 @@
 Update this file at the end of every work session. It is the source of truth after a context reset.
 
 ## Current milestone
-M4 done (2026-10-28), not yet committed (M3 is commit 7a30740). Next: M5 (frontend foundation + design system). Postgres runs via `docker compose up -d db` (Docker Desktop must be running).
+M5 done (2026-10-28), not yet committed (M4 is commit 7f2cc83). Next: M6 (four workspaces end to end). Postgres runs via `docker compose up -d db` (Docker Desktop must be running).
 
 ## Milestones
 | # | Name | State | Acceptance criteria met |
@@ -14,7 +14,7 @@ M4 done (2026-10-28), not yet committed (M3 is commit 7a30740). Next: M5 (fronte
 | 2 | OR-Tools + SA + common interface | done | Contract, OR-Tools, SA, evaluator parity, determinism, cancellation, infeasible handling, baseline experiments + CSV/JSON; 165 tests (2026-10-28) |
 | 3 | QPSO-inspired optimizer | done | Math written first (docs/algorithms.md); encode/decode/update/repair/LS tests, determinism, cancellation, evaluator parity, measured ablation, limitations; 205 tests (2026-10-28) |
 | 4 | Persistence, API, worker | done | Alembic from clean DB, immutable versions (DB trigger), runs/results/events/suites, Postgres SKIP LOCKED queue + worker process, SSE, cancel, idempotency, recovery; 60 integration tests on real Postgres 18.6 (2026-10-28) |
-| 5 | Frontend foundation + design system | todo | |
+| 5 | Frontend foundation + design system | done | Tokens (exact spec values, test-checked), dark/light theme, shell, panels, status components, React Flow road renderer, TanStack Query + SSE + Zustand on the real API; lint/build/32 Vitest pass; live run/cancel verified in browser (2026-10-28) |
 | 6 | Four workspaces end to end | todo | |
 | 7 | Simulation + replanning | todo | |
 | 8 | Hardening, benchmarks, docs | todo | |
@@ -49,6 +49,10 @@ M4 done (2026-10-28), not yet committed (M3 is commit 7a30740). Next: M5 (fronte
 - D16 (2026-10-28): Benchmark suites are sets of ordinary runs (suite_id FK) created in one transaction; comparison/export are computed from stored COMPLETED results only (cancelled/failed/unfinished counted, never imputed). Experiment API = /suites.
 - D17 (2026-10-28): Scenario versions are immutable via a Postgres BEFORE UPDATE trigger; deleting a scenario is refused (409) if any run or suite references its versions. `owner_id` columns are present but unused (auth-ready boundary). Algorithms gained `uses_seed`; the API generates and records a seed before execution for seeded algorithms.
 - D18 (2026-10-28): SSE polls `run_events` (0.5 s) through the threadpool; reads run status BEFORE events so a terminal status always comes with its final events (a race found and fixed by test). Progress events are throttled and capped per run; the latest summary is on the run row; old progress events of finished runs are pruned.
+- D19 (2026-10-28): Design tokens live only in `frontend/src/app/globals.css` (`--tq-*`, dark default, `[data-theme=light]`), mapped onto shadcn/ui variables; `src/styles/tokens.test.ts` asserts the exact SPEC_FULL 13.2/13.3 values and WCAG contrast. Derived (non-spec) tokens, each with a stated reason: road graphite, on-signal text, light-theme incident/ochre/traffic/road/muted variants, a 4-colour series palette disjoint from traffic colours, and `--tq-signal-fill` #b8432c for filled controls in light theme because the spec light accent #d94f35 cannot carry AA small text in white (4.10:1) or black. Strokes/routes keep #d94f35.
+- D20 (2026-10-28): shadcn/ui (radix base, nova preset) for primitives; generated files in `src/components/ui` are excluded from Prettier. A token-styled native `<select>` is used for accessibility/testability. Fonts: Inter + JetBrains Mono (shadcn's Geist removed). `vite-tsconfig-paths` dropped for Vite's native `resolve.tsconfigPaths`.
+- D21 (2026-10-28): The M1.5 RouteSlice page was replaced by the Command Center (route group `(workspaces)`, `/` redirects). Algorithm Lab, Scenario Studio and Experiment Explorer pages are explicit "not implemented yet (M6)" notices with no mock data. The run launcher exposes only budget parameters (+ seed for seeded algorithms); everything else is the server default. Workspace state (theme, version, active run, panels) persists in localStorage via Zustand so jobs survive refresh/navigation; server state is TanStack Query; SSE via EventSource with id-deduping reducer.
+- D22 (2026-10-28): Map display rule: an open road is "congested" when current_time / base_time >= 1.25 (display only). Two-way roads are drawn offset 3 px per direction; status is never colour-only (dash pattern for closed, text labels, `<title>` tooltips).
 - D4 (2026-10-28): Docker Compose uses `postgres:18`, matching the locally installed PostgreSQL 18.1 binaries. Worker uses sync SQLAlchemy/psycopg to avoid Windows asyncio event-loop issues with psycopg async.
 
 ## Assumptions and risks
@@ -112,7 +116,15 @@ M4 done (2026-10-28), not yet committed (M3 is commit 7a30740). Next: M5 (fronte
 - First integration run: 4 failures were wrong test expectations (server limits correctly rejected configs); 1 real bug: SSE could end before sending final events (read order); fixed, then the test passed 5/5 reruns.
 - Manual e2e with separate processes (uvicorn :8001 + `python -m trafiqon.worker.main --migrate`): created scenario from congested_city, submitted qpso_hybrid (iterations 40, seed 5); SSE showed queued, started, 2x progress, completed, end; run COMPLETED attempt 1, objective 73.8, feasible, 1.07 s.
 
+2026-10-28 (M5):
+- `npx shadcn@latest init -t next -b radix -p nova` (first try without `-p` stopped at an interactive preset prompt) and `shadcn add input label select tabs tooltip badge separator scroll-area`; `npm install zustand` (5.0.16). First `@types/node` peer conflict not re-hit.
+- `cd frontend && npm test` -> `Test Files 5 passed, Tests 32 passed` (tokens 7, toFlow 8, events 4, AppShell 5, CommandCenter 8). The first token test run failed on a real issue (spec light accent vs small-text contrast), fixed via D19.
+- `npm run lint` -> ESLint clean, `All matched files use Prettier code style!`. `npm run build` -> `Compiled successfully`, 8/8 static pages.
+- Live check (built-in browser; API with DB on :8000, worker process, `next dev` on :3000), verified via DOM because the pane could not render screenshots: imported Congested City; header showed `Congested City v1 · synthetic` and `API: online · DB: ok`; launched qpso_hybrid (60 iterations, seed 7): QUEUED -> RUNNING -> COMPLETED, event log streamed over SSE, objective 73.800 min, routes 22.05 + 14.60 + 31.05 + 6.10 = 73.80; after a page reload, the scenario, run and result were restored. Launched SA (2M iterations) and cancelled from the UI: RUNNING -> CANCELLING -> CANCELLED, best-so-far 78.500 kept, "stopped: cancelled".
+- Found and fixed in the live check: the monitor showed the last throttled progress report (iteration 49 of 60) as if final; it is now labelled as such, and the final iteration/evaluation counts appear under Best solution.
+
 ## Known defects and open items
+- M5: the map's visual rendering (React Flow edges/route overlay) was NOT verified by screenshot: the browser pane could not composite frames while the Claude window was not in view, and React Flow does not measure nodes then (36 nodes in the DOM, edges not drawn). Component tests cover what is handed to the renderer; a visual check is still owed. No ECharts convergence chart yet (M6/M8). Light theme exists but no workspace defaults to it yet. Small-screen layout stacks panels under the map; not tested on a device.
 - M4: no simulation API yet (M7). No per-client rate limiting; job submission is bounded by the queued-run limit only. SSE uses DB polling (fine for one node). The frontend still uses only the built-in endpoints (M5/M6 connect it). Compose has only the `db` service (api/worker/web in M8). No CI yet (M8).
 - M3: local search dominates QPSO runtime (about 5 s on 30 customers); not faster than SA there. Only one larger-experimental instance has been measured.
 - M2: the small fixtures are easy (both methods tie on 2 of 3); larger experimental scenarios are needed before comparisons mean much (M8). No exact/lower-bound method yet, so every gap is vs a heuristic reference. Not yet in the API (runs/worker arrive in M4).

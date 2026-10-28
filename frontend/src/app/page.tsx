@@ -1,5 +1,5 @@
-import { RouteSlice } from "@/features/route-slice/RouteSlice";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <RouteSlice />;
+  redirect("/command-center");
 }
