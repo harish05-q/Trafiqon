@@ -1,6 +1,8 @@
 """Alembic environment. URL: config `sqlalchemy.url` if set, else TRAFIQON_DATABASE_URL."""
 
+import logging
 import os
+from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import create_engine, pool
@@ -8,6 +10,10 @@ from sqlalchemy import create_engine, pool
 from trafiqon.persistence.models import Base
 
 config = context.config
+# Log migration steps (useful startup logs in the `migrate` container) unless the caller has
+# already configured logging (e.g. pytest or an application process).
+if config.config_file_name and not logging.getLogger().handlers:
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 target_metadata = Base.metadata
 
 

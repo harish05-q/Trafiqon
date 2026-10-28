@@ -1,4 +1,7 @@
-# Local stack. M4: database only; api/worker/web services are added in M8.
+# TRAFIQON local stack: PostgreSQL, one-shot migrations, API, worker, web.
+#   docker compose up --build        -> http://localhost:3000 (API on :8000)
+# Host ports are configurable (DB_PORT, API_PORT, WEB_PORT). If you change API_PORT, also set
+# PUBLIC_API_URL so the browser-facing URL baked into the web build matches.
 services:
   db:
     image: postgres:18
@@ -7,7 +10,7 @@ services:
       POSTGRES_PASSWORD: trafiqon
       POSTGRES_DB: trafiqon
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql
     healthcheck:
@@ -15,6 +18,52 @@ services:
       interval: 2s
       timeout: 3s
       retries: 30
+
+  migrate:
+    build: ./backend
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      TRAFIQON_DATABASE_URL: postgresql+psycopg://trafiqon:trafiqon@db:5432/trafiqon
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build: ./backend
+    environment:
+      TRAFIQON_DATABASE_URL: postgresql+psycopg://trafiqon:trafiqon@db:5432/trafiqon
+      TRAFIQON_CORS_ORIGINS: ${PUBLIC_WEB_URL:-http://localhost:3000}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    command: ["python", "-m", "trafiqon.worker.main"]
+    environment:
+      TRAFIQON_DATABASE_URL: postgresql+psycopg://trafiqon:trafiqon@db:5432/trafiqon
+    healthcheck:
+      disable: true
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   pgdata:

@@ -45,3 +45,21 @@ frontend (Next.js)  --HTTP/SSE-->  api (FastAPI)  --SQL-->  PostgreSQL  <--SQL--
 - **Charts:** ECharts via a small wrapper. The option builder is a pure, tested function; series colours come from the series tokens. The chart shows stored history after a run, or live progress reports during one, labelled as such.
 - **Themes:** design tokens live only in `app/globals.css`. Operational workspaces start dark; the Experiment Explorer starts on the warm light theme.
 - **Tests:** Vitest (`src/**/*.test.ts(x)`) uses real-shaped API fixtures (`src/test/fake-api.ts`). Playwright (`e2e/`) runs against the real stack: a migrated e2e database, the API on :8100, a separate worker process, and a production build on :3100.
+
+## Simulation
+- **Engine:** `simulation/` is a pure-Python deterministic tick engine with replanning; see `simulation.md`.
+- **Real-time sessions:** the API process holds them in memory, behind a per-session lock (D27).
+- **Polling:** the browser polls the authoritative state while a session runs.
+
+## Delivery
+- **`docker-compose.yml`:**
+  - `db` (PostgreSQL 18);
+  - `migrate` (a one-shot `alembic upgrade head`);
+  - `api` (uvicorn, health check on `/api/v1/ready`);
+  - `worker` (the same backend image);
+  - `web` (Next.js standalone build; the browser-facing API URL is a build argument).
+- **CI** (`.github/workflows/ci.yml`):
+  - backend lint and tests against a PostgreSQL service;
+  - frontend lint, tests and build;
+  - Playwright end-to-end workflows 1–6 and accessibility;
+  - Compose image build.

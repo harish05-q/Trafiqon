@@ -28,11 +28,11 @@ export function Section({
 
 const STATUS: Record<RunStatus, { icon: React.ElementType; tone: string; spin?: boolean }> = {
   QUEUED: { icon: CircleDashed, tone: "text-muted-foreground" },
-  RUNNING: { icon: Loader2, tone: "text-signal", spin: true },
+  RUNNING: { icon: Loader2, tone: "text-signal-text", spin: true },
   CANCELLING: { icon: Loader2, tone: "text-traffic-congested", spin: true },
   CANCELLED: { icon: Ban, tone: "text-muted-foreground" },
   COMPLETED: { icon: CheckCircle2, tone: "text-traffic-normal" },
-  FAILED: { icon: XCircle, tone: "text-incident" },
+  FAILED: { icon: XCircle, tone: "text-incident-text" },
 };
 
 /** Run status with icon + text label (never color alone). */
@@ -74,7 +74,7 @@ export function Stat({
       <dt className="text-muted-foreground flex items-center gap-1 text-xs">
         {label}
         {kind && (
-          <span className="text-text-muted text-[10px]" title={`${kind} quantity`}>
+          <span className="text-muted-foreground text-[10px]" title={`${kind} quantity`}>
             {kind === "measured" ? "meas." : "deriv."}
           </span>
         )}
@@ -106,7 +106,7 @@ export function ErrorState({ error, title = "Request failed" }: { error: Error; 
   return (
     <div
       role="alert"
-      className="border-incident/60 text-incident rounded-sm border px-2 py-1.5 text-xs"
+      className="border-incident/60 text-incident-text rounded-sm border px-2 py-1.5 text-xs"
     >
       <p className="flex items-center gap-1 font-medium">
         <AlertTriangle aria-hidden="true" className="size-3.5" />

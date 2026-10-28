@@ -87,7 +87,7 @@ function Controls({ sim }: { sim: SimulationState }) {
             </option>
           ))}
         </NativeSelect>
-        <span className="num text-text-muted text-[11px]">
+        <span className="num text-muted-foreground text-[11px]">
           tick {sim.tick} · plan v{sim.plan_version}
         </span>
       </div>
@@ -104,12 +104,14 @@ function Controls({ sim }: { sim: SimulationState }) {
             reordered · {report.edges_changed} road segments changed
           </p>
           {report.unserved.length > 0 && (
-            <p className="text-incident">Unreachable, not served: {report.unserved.join(", ")}</p>
+            <p className="text-incident-text">
+              Unreachable, not served: {report.unserved.join(", ")}
+            </p>
           )}
           {report.vehicles
             .filter((v) => !v.end_depot_reachable)
             .map((v) => (
-              <p key={v.vehicle_id} className="text-incident">
+              <p key={v.vehicle_id} className="text-incident-text">
                 {v.vehicle_id} cannot reach its end depot: stranded until roads reopen.
               </p>
             ))}
@@ -123,7 +125,9 @@ function Controls({ sim }: { sim: SimulationState }) {
           <ul className="grid gap-1 text-xs" aria-label="Incidents">
             {sim.incidents.map((i) => (
               <li key={i.id} className="flex items-center justify-between gap-2">
-                <span className={i.active ? "text-incident" : "text-text-muted line-through"}>
+                <span
+                  className={i.active ? "text-incident-text" : "text-muted-foreground line-through"}
+                >
                   <span className="num">{i.id}</span> {i.kind}
                   {i.kind === "slowdown" && ` ×${i.factor}`} · {i.edge_ids.join(", ")}
                 </span>
@@ -137,7 +141,7 @@ function Controls({ sim }: { sim: SimulationState }) {
           </ul>
         )}
       </div>
-      <p className="text-text-muted text-[11px]">
+      <p className="text-muted-foreground text-[11px]">
         Simulated quantities (clock, positions, driving time) come from the backend engine; the map
         only interpolates between its updates. Replanning keeps positions, completed stops and the
         clock, and reorders each vehicle&apos;s own remaining stops.
@@ -210,7 +214,7 @@ export function SimulationPanel({
             Simulate a construction plan
           </Button>
           {!runUsable && (
-            <p className="text-text-muted text-[11px]">
+            <p className="text-muted-foreground text-[11px]">
               Complete a run on this version to simulate its routes.
             </p>
           )}

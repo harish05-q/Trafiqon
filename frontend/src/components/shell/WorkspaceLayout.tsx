@@ -23,6 +23,7 @@ export function WorkspaceLayout({
 }) {
   const panels = useWorkspace((s) => s.panels);
   const toggle = useWorkspace((s) => s.togglePanel);
+  // Scrollable panels are focusable so keyboard users can scroll them (WCAG 2.1.1).
   return (
     <div className="flex h-full flex-col overflow-y-auto lg:overflow-hidden">
       <div className="flex min-h-0 flex-col lg:flex-1 lg:flex-row">
@@ -40,7 +41,15 @@ export function WorkspaceLayout({
             onClick={() => toggle("left")}
             icon={panels.left ? <ChevronLeft /> : <ChevronRight />}
           />
-          {panels.left && <div className="min-h-0 flex-1 overflow-y-auto">{left}</div>}
+          {panels.left && (
+            <div
+              tabIndex={0}
+              aria-label="Scrollable controls"
+              className="min-h-0 flex-1 overflow-y-auto"
+            >
+              {left}
+            </div>
+          )}
         </aside>
         <main className="relative order-1 h-[60vh] min-w-0 flex-1 lg:order-2 lg:h-auto">
           {center}
@@ -58,7 +67,15 @@ export function WorkspaceLayout({
             onClick={() => toggle("right")}
             icon={panels.right ? <ChevronRight /> : <ChevronLeft />}
           />
-          {panels.right && <div className="min-h-0 flex-1 overflow-y-auto">{right}</div>}
+          {panels.right && (
+            <div
+              tabIndex={0}
+              aria-label="Scrollable inspector"
+              className="min-h-0 flex-1 overflow-y-auto"
+            >
+              {right}
+            </div>
+          )}
         </aside>
       </div>
       <section
@@ -72,7 +89,15 @@ export function WorkspaceLayout({
           icon={panels.bottom ? <ChevronDown /> : <ChevronUp />}
           horizontal
         />
-        {panels.bottom && <div className="h-[calc(100%-1.75rem)] overflow-y-auto">{bottom}</div>}
+        {panels.bottom && (
+          <div
+            tabIndex={0}
+            aria-label="Scrollable run details"
+            className="h-[calc(100%-1.75rem)] overflow-y-auto"
+          >
+            {bottom}
+          </div>
+        )}
       </section>
     </div>
   );

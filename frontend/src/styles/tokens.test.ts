@@ -84,6 +84,29 @@ describe("design tokens", () => {
     expect(contrast(t["--tq-on-signal"], t["--tq-signal-fill"])).toBeGreaterThanOrEqual(4.5);
   });
 
+  it.each([
+    ["dark", dark],
+    ["light", light],
+  ])("%s status text tokens reach AA on every surface", (_name, t) => {
+    for (const text of [
+      "--tq-signal-text",
+      "--tq-incident-text",
+      "--tq-traffic-normal",
+      "--tq-traffic-congested",
+    ]) {
+      for (const surface of ["--tq-bg", "--tq-surface", "--tq-surface-2", "--tq-elevated"]) {
+        expect(contrast(t[text], t[surface]), `${text} on ${surface}`).toBeGreaterThanOrEqual(4.5);
+      }
+    }
+  });
+
+  it("documents that the spec muted token is not used for small text on surfaces", () => {
+    // Spec 13.2 muted (#77786f) on the dark surface is below AA (4.5:1) for small text, so the UI
+    // uses the secondary text token for small informational text (axe audit, STATUS D31).
+    expect(contrast(dark["--tq-text-muted"], dark["--tq-surface"])).toBeLessThan(4.5);
+    expect(contrast(dark["--tq-text-secondary"], dark["--tq-surface"])).toBeGreaterThanOrEqual(4.5);
+  });
+
   it("uses a derived fill where the spec light accent cannot carry small text", () => {
     expect(contrast("#ffffff", light["--tq-signal"])).toBeLessThan(4.5);
     expect(light["--tq-signal"]).toBe("#d94f35"); // strokes keep the spec accent

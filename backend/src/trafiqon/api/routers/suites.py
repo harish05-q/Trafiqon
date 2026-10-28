@@ -235,9 +235,8 @@ def comparison(suite_id: uuid.UUID, session: Session = Depends(deps.db)) -> dict
         for st, n in c.items()
         if st in ("COMPLETED", "CANCELLED", "FAILED")
     )
-    data = report.to_json_dict()
-    data.pop("runs")
-    return {**data, "status_counts_by_spec": counts, "complete": finished == total}
+    # Seed-level rows (COMPLETED runs only, bounded by the suite size limit) for charts.
+    return {**report.to_json_dict(), "status_counts_by_spec": counts, "complete": finished == total}
 
 
 @router.get("/{suite_id}/export", responses=ERRORS)

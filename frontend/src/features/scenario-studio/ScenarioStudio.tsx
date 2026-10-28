@@ -75,7 +75,7 @@ function NumberFieldInner({ id, label, value, onCommit, step = "any", min = 0 }:
 
 function ValidationReport({ v }: { v: ScenarioValidation }) {
   const tone = {
-    error: "text-incident",
+    error: "text-incident-text",
     infeasible: "text-traffic-congested",
     warning: "text-muted-foreground",
   };
@@ -87,7 +87,7 @@ function ValidationReport({ v }: { v: ScenarioValidation }) {
             ? v.feasible_so_far
               ? "text-traffic-normal"
               : "text-traffic-congested"
-            : "text-incident",
+            : "text-incident-text",
         )}
       >
         {!v.valid
@@ -245,7 +245,7 @@ export function ScenarioStudio() {
             Empty network
           </Button>
           {loadError && <ErrorState error={loadError} title="Could not load" />}
-          <p className="text-text-muted text-[11px]">
+          <p className="text-muted-foreground text-[11px]">
             Editing:{" "}
             {source.kind === "saved"
               ? `${name} (from v${source.versionNumber}; saving creates a new version)`
@@ -275,7 +275,7 @@ export function ScenarioStudio() {
             </Button>
           ))}
         </div>
-        <p className="text-text-muted mt-2 text-[11px]" aria-live="polite">
+        <p className="text-muted-foreground mt-2 text-[11px]" aria-live="polite">
           {tool === "add-node" && "Click the canvas to place a node."}
           {tool === "add-road" &&
             (pending
@@ -471,7 +471,7 @@ export function ScenarioStudio() {
             onCommit={(v) => act({ type: "setDemand", customerId: customer.id, demand: v })}
           />
         )}
-        {depot && <p className="text-text-muted text-xs">Depot {depot.id}</p>}
+        {depot && <p className="text-muted-foreground text-xs">Depot {depot.id}</p>}
         <Button
           variant="destructive"
           size="sm"

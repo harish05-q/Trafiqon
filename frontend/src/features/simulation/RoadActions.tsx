@@ -74,7 +74,7 @@ export function RoadActions({ sim, edgeId }: { sim: SimulationState; edgeId: str
           ))}
         </NativeSelect>
       </div>
-      <p className="text-text-muted text-[11px]">
+      <p className="text-muted-foreground text-[11px]">
         A vehicle already on this road keeps its progress; the rest of the road is re-timed.
         Closures stop vehicles from entering; replan to route around them.
       </p>

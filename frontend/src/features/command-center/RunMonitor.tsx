@@ -37,10 +37,10 @@ function ActiveRun({ run }: { run: RunOut }) {
         <div className="flex flex-wrap items-center gap-3">
           <RunStatusBadge status={run.status} />
           <span className="text-xs">{ALGORITHM_LABELS[run.algorithm_id] ?? run.algorithm_id}</span>
-          <span className="num text-text-muted text-xs">
+          <span className="num text-muted-foreground text-xs">
             seed {run.seed ?? "n/a"} · attempt {run.attempt}/{run.max_attempts}
           </span>
-          <span className="num text-text-muted text-xs" title={run.id}>
+          <span className="num text-muted-foreground text-xs" title={run.id}>
             {run.id.slice(0, 8)}
           </span>
           <Button
@@ -74,7 +74,7 @@ function ActiveRun({ run }: { run: RunOut }) {
           />
         )}
         {cancel.isError && <ErrorState error={cancel.error} title="Cancel failed" />}
-        <p className="text-text-muted text-[11px]">
+        <p className="text-muted-foreground text-[11px]">
           Latest progress report from the worker (reports are throttled
           {terminal ? "; final counts are under Best solution" : ""}). Live updates:{" "}
           {log.connection === "open" ? "connected" : log.connection}
@@ -102,7 +102,7 @@ function ActiveRun({ run }: { run: RunOut }) {
                     e.kind === "lifecycle" ? "text-foreground" : "text-muted-foreground",
                   )}
                 >
-                  <span className="text-text-muted">
+                  <span className="text-muted-foreground">
                     {new Date(e.created_at).toLocaleTimeString()}
                   </span>{" "}
                   {describe(e)}

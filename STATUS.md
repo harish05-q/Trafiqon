@@ -8,7 +8,7 @@ Update this file at the end of every work session. It is the source of truth aft
 
 ## Current milestone
 
-M7 done (2026-10-29), not yet committed (M6 is commit f0770f0). Next: M8 (hardening, benchmarks, docs, Compose stack, CI). Postgres runs via `docker compose up -d db` (Docker Desktop must be running).
+M8 done and committed (2026-10-29). All planned milestones (M0-M8) are done; see the Definition of Done walk below for what is and is not verified. Full stack: `docker compose up --build` (Docker Desktop must be running); tests need `docker compose up -d db`.
 
 
 
@@ -36,7 +36,7 @@ M7 done (2026-10-29), not yet committed (M6 is commit f0770f0). Next: M8 (harden
 
 | 7 | Simulation + replanning | done | Deterministic tick engine (exact intra-tick timing, no teleporting), defined traffic/closure-on-edge semantics, layered incidents, state-preserving replan with latency/disruption, real-time sessions, simulation API, Command Center UI, Playwright E2E 5 (2026-10-29) |
 
-| 8 | Hardening, benchmarks, docs | todo | |
+| 8 | Hardening, benchmarks, docs | done | Seed-level benchmark chart from stored results, export verified against stored results (E2E 6), axe WCAG 2 A/AA audit of all workspaces in both themes + keyboard test, full Compose stack (db/migrate/api/worker/web) verified from a clean volume, CI workflow, root README, interview guide, docs reviewed; 320 backend, 71 Vitest, 9 Playwright pass (2026-10-29) |
 
 
 
@@ -116,6 +116,12 @@ M7 done (2026-10-29), not yet committed (M6 is commit f0770f0). Next: M8 (harden
 - D28 (2026-10-29): Engine semantics: position = progress in [0,1] on an edge; a tick's time budget is spent exactly (zero-time transitions such as stop completion happen even with no budget left). Traffic change on the current edge keeps progress and re-times the remainder; closures block entry only (a vehicle on a newly closed edge finishes it); a closed next edge -> `blocked` until reopen or replan. Conditions are layered (original, manual factor, manual closure, incidents) and recomputed on resolve.
 - D29 (2026-10-29): Replanning keeps the clock, positions, the edge in progress and completed stops; each vehicle keeps its own remaining customers (goods on board) plus previously unserved ones; order = exact permutations up to 7 stops (tested never worse than the old order), else cheapest insertion + 2-opt. Unreachable stops -> `unserved`; unreachable end depot -> stranded vehicle reported (serves stops at its own node); the simulation is never reported finished while a vehicle is stranded. Latency is measured; disruption (stops reordered, segments changed) is derived.
 - D30 (2026-10-29): Real-time playback converts wall time into whole ticks with carry at `speed` simulated min/s (fixed set 0.25-30), at most 20,000 ticks per request. The frontend polls every 400 ms while running and only interpolates marker movement with a CSS transition (off under reduced motion).
+- D31 (2026-10-29): Text colour rules from the a11y audit: the spec's muted token (#77786f) is 3.96:1 on the dark surface, so it is kept for borders/decoration only and small text uses `text-muted-foreground`. Status colours used as text get `--tq-*-text` tokens (signal, incident), and the light theme's derived traffic-normal/congested are darkened; a token test asserts >= 4.5:1 on every surface in both themes. The spec palette values themselves are unchanged.
+- D32 (2026-10-29): The suite comparison endpoint also returns seed-level rows of COMPLETED runs (`runs`); the Explorer draws them as a per-seed scatter with the mean marked, so spread is visible, not just aggregates.
+- D33 (2026-10-29): Compose runs the full stack: `db`, one-shot `migrate` (`alembic upgrade head`), `api`, `worker`, `web` (Next standalone build, enabled only when `NEXT_OUTPUT=standalone` so local `next start`/E2E are unchanged). Host ports and the browser-visible API URL are variables (`DB_PORT`, `API_PORT`, `WEB_PORT`, `PUBLIC_API_URL`); `NEXT_PUBLIC_API_BASE_URL` is baked at image build time. Alembic `env.py` only configures logging if none is configured, so the migrate container logs its upgrades.
+- D34 (2026-10-29): CI (`.github/workflows/ci.yml`): backend (Postgres 18 service, ruff, pytest), frontend (lint, Vitest, build), E2E (Playwright, artifacts on failure), and image builds. Validated as YAML locally only; it has NOT run on GitHub (no remote configured).
+- D35 (2026-10-29): Scrollable workspace panels are focusable (`tabIndex=0` + aria-label) so keyboard users can scroll them (WCAG 2.1.1, axe scrollable-region-focusable). The keyboard E2E accepts either the token outline or the shadcn focus ring as the visible focus indicator. Map nodes/vehicle markers with an aria-label get `role="img"`.
+- D36 (2026-10-29): The axe audit excludes only React Flow's attribution link (third-party). Audits run on the production build with real data, including a mid-simulation state.
 - D4 (2026-10-28): Docker Compose uses `postgres:18`, matching the locally installed PostgreSQL 18.1 binaries. Worker uses sync SQLAlchemy/psycopg to avoid Windows asyncio event-loop issues with psycopg async.
 
 
@@ -272,7 +278,37 @@ M7 done (2026-10-29), not yet committed (M6 is commit f0770f0). Next: M8 (harden
 - Integration check: simulated driving time of a completed run's plan == its evaluator objective when nothing changes.
 - Visual review (Playwright screenshot mid-simulation with an incident and a replan): vehicles render at backend positions with remaining paths. Fixed from the review: vehicle labels showed the internal node id (`vehicle:v2`); the inspector showed the ORIGINAL road status ("normal") for a road closed in the simulation (now uses the simulation's effective roads; regression test added); a selected closed road lost its dash pattern.
 
+2026-10-29 (M8):
+- `cd backend && uv run pytest` -> `320 passed in 47.11s`; `ruff check .` -> `All checks passed!`; `ruff format --check .` -> `74 files already formatted`.
+- `cd frontend && npm test` -> `Test Files 11 passed, Tests 71 passed`; `npm run lint` -> ESLint clean and Prettier clean (after `prettier --write next.config.ts`); `npm run build` -> `Compiled successfully`.
+- `cd frontend && npx playwright test` -> `9 passed (1.4m)`: E2E 1-6, a11y audit, keyboard test, screenshots. Getting there took four a11y rounds, all real findings: aria-label on role-less divs (19 nodes), muted text contrast (18 nodes, D31), light traffic-normal text on secondary (3.88:1), unfocusable scroll regions (D35), and the inactive tab trigger (`text-foreground/60`) in the light theme.
+- E2E 6 (export): suite run through the worker; JSON and CSV downloaded through the UI match the stored suite/runs (ids, version fingerprint, seeds, budget policy, evaluator version, software versions, per-run objective/seed, reference label). Passed.
+- `docker compose up --build` on a clean volume (separate project, ports 5442/8300/3300, then `down -v`): migrate exited 0 (`Running upgrade -> 0001`), api healthy, web healthy; a run launched from the browser was executed by the worker container: COMPLETED, objective 73.800. First build attempt failed in `npm ci` (transient, during parallel builds); the rebuild passed.
+- CI YAML parsed with `yaml.safe_load`; not run on GitHub.
+
+## Definition of Done walk (SPEC_FULL section 20, 2026-10-29)
+Functionality:
+- Starts via documented workflow: yes (README Docker quick start, verified from a clean volume).
+- Migrations from clean DB: yes (Compose migrate, E2E globalSetup, integration tests).
+- Built-in scenarios load/inspect; graph editing + validation; Dijkstra/A*; OR-Tools and SA correctly evaluated; QPSO implements its documented update; one evaluator: yes, unit/integration tested (M1-M3) and E2E 1-2.
+- Runs through the worker; progress is real; cancellation/failure states; persistence across refresh: yes (M4 integration on real Postgres, E2E 3, browser checks).
+- Simulation follows authoritative state; incidents affect costs/availability; replanning preserves positions and completed stops: yes (M7 tests, E2E 5).
+- Benchmarks/exports from stored results: yes (E2E 6).
+Visual quality:
+- Branding, central tokens, dark palette, warm light theme, map-first layout, no neon remnants: yes, by token tests and screenshot review at 1440x900 only.
+- Charts with labels/units/legends from real data: yes (convergence, seed scatter).
+- Empty/loading/failure/cancellation states: present and exercised in E2E for the main flows; not every edge state was reviewed visually.
+- Keyboard and reduced motion: axe A/AA clean and a Tab-reachability test pass; reduced motion disables marker transitions. Canvas road selection is mouse/pointer only (roads are also selectable in lists). No screen-reader user testing.
+Engineering quality:
+- Tests, lint, format, builds pass: yes (above). CI not run remotely.
+- No known critical defects in required workflows: none known.
+- No fabricated metrics: all figures shown come from stored runs; the app shows "not proven optimal" wording for heuristics.
+- Docs reflect implementation: reviewed in M8 (README, architecture, api_contracts, algorithms, benchmark_methodology, interview_guide).
+- Reproducible setup: Docker path verified on this Windows machine only.
+Not done / partial: "improve performance" was limited to bounded limits and the existing throttling; no profiling pass or larger-instance benchmark campaign. Mobile/small screens not tested on a device.
+
 ## Known defects and open items
+- M8: CI never run on GitHub. No performance profiling; QPSO local search still dominates runtime (M3). Small-screen layouts untested on devices. Screenshot review at 1440x900 only. The Compose stack on API 8200 / web 3200 used during M8 may still be running (`docker compose down` to stop; keep `db` for tests).
 - M7: simulation sessions are in-memory (single API process, lost on restart; D27). No service time at stops (arrival = service). Customers are never reassigned between vehicles during replanning (deliberate, D29). Replanning uses its own exact/heuristic ordering, not the QPSO/SA/OR-Tools optimizers.
 - M6: no Playwright E2E 5 (simulation, M7) or 6 (export metadata vs stored result, M8). Studio has no undo; multiple end depots per vehicle are not editable in the Studio (the API supports them). The run history table has no objective column (results are fetched per selected run). Screenshots were reviewed at 1440x900 only.
 
@@ -288,8 +324,6 @@ M7 done (2026-10-29), not yet committed (M6 is commit f0770f0). Next: M8 (harden
 
 - No Playwright yet (M6); the drawn-path check above was manual via the built-in browser plus a Vitest wiring test.
 
-- Nothing committed yet.
-
 - Scenario `settings` holds traffic/incident metadata as a free-form dict; algorithm config is not on the scenario (it belongs to runs, M2/M4).
 
 - Docs so far: `docs/mathematical_model.md`, `backend/README.md`. No root README yet (M8).
@@ -298,5 +332,4 @@ M7 done (2026-10-29), not yet committed (M6 is commit f0770f0). Next: M8 (harden
 
 - No running Postgres: needed for M4 integration tests. Options: Docker Desktop, or a user-owned cluster via local 18.1 `initdb`/`pg_ctl` on a spare port.
 
-- No application code exists yet (greenfield).
 

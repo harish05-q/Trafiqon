@@ -142,7 +142,7 @@ export function RunLauncher() {
             BUDGET_PARAMS[info.id].map((p) => (
               <div key={p.key} className="grid gap-1">
                 <Label htmlFor={`budget-${p.key}`} className="text-xs">
-                  {p.label} <span className="text-text-muted">({p.unit})</span>
+                  {p.label} <span className="text-muted-foreground">({p.unit})</span>
                 </Label>
                 <Input
                   id={`budget-${p.key}`}
@@ -155,7 +155,7 @@ export function RunLauncher() {
                   onChange={(e) => setBudget({ ...values, [p.key]: Number(e.target.value) })}
                   aria-describedby={`budget-${p.key}-help`}
                 />
-                <p id={`budget-${p.key}-help`} className="text-text-muted text-[11px]">
+                <p id={`budget-${p.key}-help`} className="text-muted-foreground text-[11px]">
                   {p.help}
                 </p>
               </div>
@@ -164,7 +164,9 @@ export function RunLauncher() {
             <div className="grid gap-1">
               <Label htmlFor="seed" className="text-xs">
                 Seed{" "}
-                <span className="text-text-muted">(blank: server generates and records one)</span>
+                <span className="text-muted-foreground">
+                  (blank: server generates and records one)
+                </span>
               </Label>
               <Input
                 id="seed"
@@ -177,7 +179,7 @@ export function RunLauncher() {
             </div>
           )}
           {info && !info.uses_seed && (
-            <p className="text-text-muted text-[11px]">This solver takes no seed.</p>
+            <p className="text-muted-foreground text-[11px]">This solver takes no seed.</p>
           )}
           {submit.isError && (
             <ErrorState
@@ -192,8 +194,10 @@ export function RunLauncher() {
           <Button type="submit" disabled={!versionId || seedInvalid || submit.isPending}>
             {submit.isPending ? "Submitting…" : "Launch run"}
           </Button>
-          {!versionId && <p className="text-text-muted text-[11px]">Load a scenario first.</p>}
-          <p className="text-text-muted text-[11px]">
+          {!versionId && (
+            <p className="text-muted-foreground text-[11px]">Load a scenario first.</p>
+          )}
+          <p className="text-muted-foreground text-[11px]">
             Budget only here; every parameter is in the{" "}
             <Link href="/algorithm-lab" className="underline">
               Algorithm Lab

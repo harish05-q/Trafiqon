@@ -54,6 +54,12 @@ The reference is:
 
 A `best_observed_heuristic` gap is relative to a heuristic result. It is not a gap to the optimum, and it is labelled as such in exports. No lower bounds are computed yet.
 
+## Benchmark suites in the application
+- **What a suite is:** a set of ordinary runs (specs × seeds) on one scenario version, created in one transaction and executed by the worker. `POST /api/v1/suites` creates one, and the Experiment Explorer can launch one.
+- **Comparison** (`GET /suites/{id}/comparison`): computed only from *stored* results of COMPLETED runs, with the same statistics and gap reference as above. Cancelled, failed and unfinished runs are counted per spec and never imputed.
+- **Seed-level rows:** the comparison includes them. The Explorer plots every completed feasible run's objective per spec, with the spec mean marked.
+- **Export:** `GET /suites/{id}/export?format=json|csv`. End-to-end test 6 downloads both files through the UI and checks them against the stored run results and the stored scenario version: fingerprint, seeds, specs, budget policy, evaluator and software versions, and every run's objective and seed.
+
 ## Exports
 - `ExperimentReport.to_json_dict()`: metadata, reference, quantity kinds, runs, and summaries.
 - `ExperimentReport.runs_csv()`: one row per run.

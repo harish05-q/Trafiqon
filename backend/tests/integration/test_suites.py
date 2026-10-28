@@ -48,6 +48,8 @@ def test_comparison_and_exports_use_stored_results(client, make_worker, version_
     cmp_ = client.get(f"/api/v1/suites/{suite['id']}/comparison").json()
     assert cmp_["complete"] is True
     assert cmp_["reference"]["kind"] == "best_observed_heuristic"
+    assert len(cmp_["runs"]) == 6  # seed-level rows of COMPLETED runs, for charts
+    assert {r["spec"] for r in cmp_["runs"]} == {"simulated_annealing", "qpso", "ortools_cvrp"}
     by_spec = {s["spec"]: s for s in cmp_["summaries"]}
     assert set(by_spec) == {"simulated_annealing", "qpso", "ortools_cvrp"}
     assert all(s["n"] == 2 and s["feasible_rate"] == 1.0 for s in by_spec.values())

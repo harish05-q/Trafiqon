@@ -33,7 +33,7 @@ function ServiceStatus() {
   let tone = "text-muted-foreground";
   if (health.isError) {
     label = "API: unreachable";
-    tone = "text-incident";
+    tone = "text-incident-text";
   } else if (health.data) {
     const db = health.data.dependencies.database?.status;
     label = db === "ok" ? "API: online · DB: ok" : `API: online · DB: ${db}`;
@@ -51,7 +51,7 @@ function SimulationStatus() {
   const simulationId = useWorkspace((s) => s.simulationId);
   const sim = useSimulation(simulationId);
   if (!simulationId || !sim.data) {
-    return <span className="text-text-muted hidden text-xs md:inline">Simulation: none</span>;
+    return <span className="text-muted-foreground hidden text-xs md:inline">Simulation: none</span>;
   }
   return (
     <span className="hidden text-xs md:inline" role="status">
@@ -67,13 +67,14 @@ function SimulationStatus() {
 function CurrentScenario() {
   const versionId = useWorkspace((s) => s.versionId);
   const version = useVersion(versionId);
-  if (!versionId) return <span className="text-text-muted text-xs">No scenario loaded</span>;
-  if (!version.data) return <span className="text-text-muted text-xs">Loading scenario…</span>;
+  if (!versionId) return <span className="text-muted-foreground text-xs">No scenario loaded</span>;
+  if (!version.data)
+    return <span className="text-muted-foreground text-xs">Loading scenario…</span>;
   return (
     <span className="truncate text-xs" title={version.data.fingerprint}>
       {version.data.data.name}{" "}
       <span className="num text-muted-foreground">v{version.data.version_number}</span>
-      {version.data.synthetic && <span className="text-text-muted"> · synthetic</span>}
+      {version.data.synthetic && <span className="text-muted-foreground"> · synthetic</span>}
     </span>
   );
 }

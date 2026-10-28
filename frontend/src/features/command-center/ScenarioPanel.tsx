@@ -60,7 +60,7 @@ export function ScenarioPanel() {
             <li key={b.id} className="flex items-center justify-between gap-2 text-xs">
               <span className="min-w-0">
                 <span className="block truncate">{b.name}</span>
-                <span className="num text-text-muted">
+                <span className="num text-muted-foreground">
                   {b.node_count} nodes · {b.customer_count} customers · {b.vehicle_count} vehicles
                 </span>
               </span>

@@ -346,6 +346,17 @@ export interface SuiteComparison {
   summaries: SuiteSummary[];
   status_counts_by_spec: Record<string, Partial<Record<RunStatus, number>>>;
   complete: boolean;
+  /** Seed-level rows of COMPLETED runs (measured/derived values from stored results). */
+  runs: {
+    spec: string;
+    algorithm_id: string;
+    seed: number | null;
+    repetition: number;
+    feasible: boolean;
+    objective: number | null;
+    elapsed_s: number;
+    termination_reason: string;
+  }[];
 }
 
 // --- M7 simulation ---------------------------------------------------------------------------

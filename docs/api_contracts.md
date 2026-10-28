@@ -100,6 +100,20 @@ RUNNING --(stale heartbeat, attempts left)--> QUEUED   (bounded retry)
   - Built from **stored** results of **COMPLETED** runs only. Cancelled, failed and unfinished runs are counted per spec and never imputed. `complete` tells whether every run has finished.
 - `GET /suites/{id}/export?format=json|csv`: the same data, plus per-run rows and reproducibility metadata (scenario fingerprint, seeds, specs, budget policy, evaluator and software versions recorded by the worker).
 
+## Simulation
+Endpoints, payloads and semantics are documented in [`simulation.md`](simulation.md).
+- `POST /simulations`, `GET /simulations` and `GET /simulations/{id}`.
+- `POST /simulations/{id}/control|incidents|incidents/{iid}/resolve|roads|replan`.
+- `DELETE /simulations/{id}`.
+
+Errors use the standard shape:
+- `simulation_not_found` (404);
+- `invalid_simulation_state` (409), for example pausing when not running;
+- `simulation_rejected` (422), for example an unknown edge or an invalid factor;
+- `too_many_simulations` (429).
+
+The suite comparison response also contains `runs`: seed-level rows of COMPLETED runs, used for charts.
+
 ## Limits (`TRAFIQON_LIMIT_*` environment variables)
 | Limit | Default |
 |---|---|
@@ -116,5 +130,6 @@ RUNNING --(stale heartbeat, attempts left)--> QUEUED   (bounded retry)
 | Export rows | 1000 |
 | Progress events per run | 200 |
 | Page size | 100 |
+| Simulation sessions | 20 (idle TTL 1 h) |
 
 There is no authentication yet. `owner_id` columns on scenarios, suites and runs mark where ownership checks will go.

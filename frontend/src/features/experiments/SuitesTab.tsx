@@ -8,6 +8,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
+import { SeedChart } from "@/components/charts/ConvergenceChart";
 import { ALGORITHM_LABELS, BUDGET_PARAMS } from "@/features/command-center/RunLauncher";
 import { api } from "@/lib/api/client";
 import {
@@ -153,13 +154,13 @@ function LaunchForm({ onLaunched }: { onLaunched: (id: string) => void }) {
                     setBudgets({ ...budgets, [`${a.id}.${p.key}`]: Number(e.target.value) })
                   }
                 />
-                <span className="text-text-muted">{p.unit}</span>
+                <span className="text-muted-foreground">{p.unit}</span>
               </label>
             ))}
           </div>
         ))}
       </fieldset>
-      <p className="text-text-muted text-[11px]">
+      <p className="text-muted-foreground text-[11px]">
         Budgets are in different units per algorithm (recorded as the suite&apos;s budget policy).
         Runs: {specs.length} × {repetitions} = {specs.length * repetitions}.
       </p>
@@ -245,7 +246,7 @@ function ComparisonTable({ c }: { c: SuiteComparison }) {
           </tbody>
         </table>
       </div>
-      <p className="text-text-muted text-[11px]">
+      <p className="text-muted-foreground text-[11px]">
         Objective statistics in minutes (derived by the shared evaluator).
       </p>
     </div>
@@ -272,7 +273,7 @@ function SuiteDetail({ id }: { id: string }) {
         <span className="num text-muted-foreground">
           {done}/{total} runs finished
         </span>
-        <span className="num text-text-muted">seeds {s.seeds.join(", ")}</span>
+        <span className="num text-muted-foreground">seeds {s.seeds.join(", ")}</span>
         <a
           className={cn(buttonVariants({ size: "xs", variant: "outline" }), "ml-auto")}
           href={api.suiteExportUrl(s.id, "csv")}
@@ -288,11 +289,25 @@ function SuiteDetail({ id }: { id: string }) {
           <Download aria-hidden="true" /> Export JSON
         </a>
       </div>
-      <p className="text-text-muted text-[11px]">
+      <p className="text-muted-foreground text-[11px]">
         Budget policy: {s.budget_policy || "not recorded"}
       </p>
       {comparison.isError && <ErrorState error={comparison.error} />}
       {comparison.data && <ComparisonTable c={comparison.data} />}
+      {comparison.data && (
+        <div>
+          <h3 className="text-xs font-semibold">Objective by seed (completed runs)</h3>
+          <SeedChart
+            runs={comparison.data.runs ?? []}
+            specs={s.specs.map((x) => x.label)}
+            label="Objective of each completed run by algorithm spec, with spec means"
+          />
+          <p className="text-muted-foreground text-[11px]">
+            Each point is one stored run; dashed lines are spec means. Infeasible, cancelled and
+            failed runs are not plotted (see statuses).
+          </p>
+        </div>
+      )}
       <h3 className="text-xs font-semibold">Seed-level runs</h3>
       {runs.data && (
         <table className="w-full text-left text-xs" aria-label="Seed-level runs">
@@ -366,7 +381,7 @@ export function SuitesTab() {
                   )}
                 >
                   <span className="block truncate">{s.name}</span>
-                  <span className="num text-text-muted">
+                  <span className="num text-muted-foreground">
                     {new Date(s.created_at).toLocaleString()} · {s.run_ids.length} runs
                   </span>
                 </button>

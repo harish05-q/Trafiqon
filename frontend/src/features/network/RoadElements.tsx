@@ -18,7 +18,7 @@ export const RoadNodeView = memo(function RoadNodeView({ id, data }: NodeProps<R
         ? `Depot ${data.refId} at ${id}`
         : `Intersection ${id}`;
   return (
-    <div className={cls} title={title} data-node-id={id} aria-label={title}>
+    <div className={cls} title={title} data-node-id={id} role="img" aria-label={title}>
       <Handle type="target" position={Position.Top} style={hidden} isConnectable={false} />
       <Handle type="source" position={Position.Top} style={hidden} isConnectable={false} />
       {data.kind !== "intersection" && <span className="road-node-label">{data.refId}</span>}
@@ -80,7 +80,12 @@ export const VehicleNodeView = memo(function VehicleNodeView({
   data,
 }: NodeProps<Node<VehicleNodeData, "vehicle">>) {
   return (
-    <div className={`vehicle-marker ${data.status}`} title={data.label} aria-label={data.label}>
+    <div
+      className={`vehicle-marker ${data.status}`}
+      title={data.label}
+      role="img"
+      aria-label={data.label}
+    >
       <span aria-hidden="true">{data.status === "blocked" ? "!" : ""}</span>
       <span className="vehicle-label">{data.vehicleId}</span>
     </div>

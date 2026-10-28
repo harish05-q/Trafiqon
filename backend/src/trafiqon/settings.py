@@ -78,4 +78,5 @@ class Settings:
             max_attempts=_int("TRAFIQON_MAX_ATTEMPTS", 2),
             progress_event_min_interval_s=_float("TRAFIQON_PROGRESS_EVENT_MIN_INTERVAL_S", 0.5),
             event_retention_days=_int("TRAFIQON_EVENT_RETENTION_DAYS", 30),
+            simulation_idle_ttl_s=_float("TRAFIQON_SIMULATION_IDLE_TTL_S", 3600.0),
         )

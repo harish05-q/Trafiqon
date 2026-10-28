@@ -105,7 +105,8 @@ function ConfigPanel() {
       {info.uses_seed ? (
         <div className="grid gap-1">
           <Label htmlFor="lab-seed" className="text-xs">
-            Seed <span className="text-text-muted">(blank: generated and recorded by server)</span>
+            Seed{" "}
+            <span className="text-muted-foreground">(blank: generated and recorded by server)</span>
           </Label>
           <Input
             id="lab-seed"
@@ -117,7 +118,7 @@ function ConfigPanel() {
           />
         </div>
       ) : (
-        <p className="text-text-muted text-[11px]">This solver takes no seed.</p>
+        <p className="text-muted-foreground text-[11px]">This solver takes no seed.</p>
       )}
       <div className="flex gap-2">
         <Button type="submit" disabled={blocked} className="flex-1">
@@ -136,7 +137,7 @@ function ConfigPanel() {
         />
       )}
       {!versionId && (
-        <p className="text-text-muted text-[11px]">
+        <p className="text-muted-foreground text-[11px]">
           Load a scenario in the{" "}
           <Link href="/command-center" className="underline">
             Command Center
@@ -144,7 +145,7 @@ function ConfigPanel() {
           first.
         </p>
       )}
-      <p className="text-text-muted text-[11px]">
+      <p className="text-muted-foreground text-[11px]">
         Only values changed from the defaults are sent; the run stores the full resolved
         configuration.
       </p>
@@ -199,7 +200,7 @@ function Feasibility({ versionId, scenario }: { versionId: string; scenario: Sce
         <Stat label="Strong components" value={d.strongly_connected_components} digits={0} />
         <Stat label="Unreachable pairs" value={d.unreachable_location_pairs} digits={0} />
       </dl>
-      <p className={cn(d.feasible_so_far ? "text-traffic-normal" : "text-incident")}>
+      <p className={cn(d.feasible_so_far ? "text-traffic-normal" : "text-incident-text")}>
         {d.feasible_so_far
           ? "No infeasibility detected (capacity totals and reachability). Not a proof that a solution exists."
           : "Infeasibility detected: runs will end with infeasible_scenario."}
@@ -327,7 +328,7 @@ export function AlgorithmLab() {
               label="Best feasible objective versus progress for the active run"
             />
           )}
-          <p className="text-text-muted text-[11px]">
+          <p className="text-muted-foreground text-[11px]">
             Solid line: history stored with the result. Dashed: progress reports received live
             (throttled). Points before the first feasible solution are not plotted.
           </p>

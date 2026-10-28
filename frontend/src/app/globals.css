@@ -35,6 +35,10 @@
   /* derived */
   --tq-road: #5c5e55; /* "subdued graphite" ordinary road stroke (13.6) */
   --tq-signal-fill: #ff6b35; /* filled controls (buttons) */
+  /* Text variants: the spec stroke colours are kept for the map; status TEXT must reach WCAG AA
+     (4.5:1) on every surface, so it uses these (axe audit, STATUS D31). */
+  --tq-signal-text: #ff6b35;
+  --tq-incident-text: #ec6f55;
   --tq-on-signal: #111210; /* text on signal fills: 6.6:1 */
   /* experiment series palette: deliberately disjoint from traffic semantics (13.7) */
   --tq-series-1: #7e93a8;
@@ -59,8 +63,8 @@
   --tq-text-muted: #6f7067;
   --tq-vermilion: #a83a24; /* darker so incidents stay distinct from the vermilion accent */
   --tq-ochre: #8f6a2f;
-  --tq-traffic-normal: #4f7a5c;
-  --tq-traffic-congested: #a47f1f;
+  --tq-traffic-normal: #3d6449;
+  --tq-traffic-congested: #7f6116;
   --tq-incident: #a83a24;
   --tq-route: #d94f35;
   --tq-disabled: #8d8e85;
@@ -68,6 +72,8 @@
   /* The spec light accent (#d94f35) cannot carry AA small text in white (4.1:1) or black;
      filled controls use this darker fill instead (white text 5.4:1). Strokes keep #d94f35. */
   --tq-signal-fill: #b8432c;
+  --tq-signal-text: #a63c27;
+  --tq-incident-text: #a83a24;
   --tq-on-signal: #ffffff;
   --tq-series-1: #4f6b86;
   --tq-series-2: #7d5878;
@@ -135,6 +141,8 @@
   --color-traffic-normal: var(--tq-traffic-normal);
   --color-traffic-congested: var(--tq-traffic-congested);
   --color-incident: var(--tq-incident);
+  --color-incident-text: var(--tq-incident-text);
+  --color-signal-text: var(--tq-signal-text);
   --color-route: var(--tq-route);
   --color-road: var(--tq-road);
   --color-disabled: var(--tq-disabled);

@@ -50,7 +50,7 @@ export function Legend({ synthetic }: { synthetic: boolean }) {
         </li>
       </ul>
       {synthetic && (
-        <p className="text-text-muted mt-2 border-t pt-1">Synthetic network: not geography</p>
+        <p className="text-muted-foreground mt-2 border-t pt-1">Synthetic network: not geography</p>
       )}
     </details>
   );

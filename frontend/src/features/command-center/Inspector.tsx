@@ -50,7 +50,7 @@ function SelectionDetails({
           v={
             <span
               className={cn(
-                traffic === "closed" && "text-incident",
+                traffic === "closed" && "text-incident-text",
                 traffic === "congested" && "text-traffic-congested",
               )}
             >
@@ -284,7 +284,7 @@ function CompareSection({
           </dl>
         )}
         {compareRun && (
-          <p className="text-text-muted text-[11px]">
+          <p className="text-muted-foreground text-[11px]">
             Comparison routes are drawn dotted on the map.
           </p>
         )}

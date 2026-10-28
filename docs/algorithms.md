@@ -215,3 +215,21 @@ Reading:
 - The assignment keys use a floor map, so small key moves near integer boundaries jump between vehicles. The key space does not encode route adjacency, so the QPSO update searches a landscape that is only partly correlated with route cost. Local search does much of the fine-grained work.
 - The Lamarckian write-back changes the dynamics compared with canonical QPSO: positions jump to encoded local optima.
 - Results are only compared on small synthetic fixtures. There is no claim of superiority over OR-Tools or SA.
+
+## Complexity (n customers, V vehicles, L = depot and customer locations, |V|/|E| graph size)
+| Component | Cost | Notes |
+|---|---|---|
+| Dijkstra / A* | O((|V|+|E|) log |V|) | Binary heap; A* is identical in the worst case (h = 0) |
+| Cost matrix | L × Dijkstra | One single-source tree per location; edge paths are kept for drawing |
+| Shared evaluator | O(total route edges) | Plus the cost matrix when explicit legs are not given |
+| Cheapest insertion | O(n² · V · route length) | Deterministic construction used by SA, QPSO and the simulation |
+| SA move | O(route length) | Only the 1–2 affected routes are re-costed |
+| QPSO iteration | M × (decode O(n log n) + repair + local search) | Local search dominates: O(n²) re-costs per pass |
+| OR-Tools | Time-limited search | Plus an O(model nodes²) cost table |
+| Simulation tick | O(vehicles × edges entered per tick) | Exact intra-tick traversal |
+| Replan (exact) | k! · k per vehicle (k ≤ 7 stops) | Plus k + 1 Dijkstra trees; cheapest insertion + 2-opt above 7 |
+
+Measured on these fixtures (STATUS.md):
+- SA at 20,000 moves takes about 0.15–0.3 s.
+- QPSO at 20 × 100 takes about 0.5–1.3 s on the built-in scenarios and about 5 s for 15 × 30 on the 30-customer grid.
+- Replanning takes about 1–2 ms.

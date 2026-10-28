@@ -137,7 +137,7 @@ function Field({
           {p.key}
         </Label>
         {p.nullable && (
-          <label className="text-text-muted flex items-center gap-1 text-[11px]">
+          <label className="text-muted-foreground flex items-center gap-1 text-[11px]">
             <input
               type="checkbox"
               className="accent-[var(--tq-signal)]"
@@ -151,12 +151,12 @@ function Field({
         )}
       </div>
       {control}
-      <p id={helpId} className="text-text-muted text-[11px]">
+      <p id={helpId} className="text-muted-foreground text-[11px]">
         {p.description}
         {(p.kind === "int" || p.kind === "float") && <> Range: {range(p)}.</>}
       </p>
       {error && (
-        <p role="alert" className="text-incident text-[11px]">
+        <p role="alert" className="text-incident-text text-[11px]">
           {p.key}: {error}
         </p>
       )}

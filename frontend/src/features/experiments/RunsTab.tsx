@@ -100,7 +100,7 @@ function RunDetail({ run, result }: { run: RunOut; result: RunResultOut | undefi
         ))}
       </dl>
       {run.error && (
-        <p className="text-incident mt-2 text-xs">
+        <p className="text-incident-text mt-2 text-xs">
           Error: {run.error.code} {run.error.message ?? ""}
         </p>
       )}
@@ -392,7 +392,7 @@ export function RunsTab() {
                     <th scope="row" className="text-muted-foreground py-1 pr-3 font-normal">
                       {row.label}
                       {row.kind && (
-                        <span className="text-text-muted ml-1 text-[10px]">{row.kind}</span>
+                        <span className="text-muted-foreground ml-1 text-[10px]">{row.kind}</span>
                       )}
                     </th>
                     {compared.map((c) => (

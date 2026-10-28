@@ -23,6 +23,11 @@ vi.mock("@/components/charts/ConvergenceChart", () => ({
   ConvergenceChart: (p: { series: { name: string; points: unknown[] }[] }) => (
     <div data-testid="chart">{p.series.map((s) => `${s.name}:${s.points.length}`).join("|")}</div>
   ),
+  SeedChart: (p: { runs: unknown[]; specs: string[] }) => (
+    <div data-testid="seed-chart">
+      {p.specs.join(",")}:{p.runs.length}
+    </div>
+  ),
 }));
 let canvas: StudioCanvasProps | null = null;
 vi.mock("@/features/scenario-studio/StudioCanvas", () => ({
@@ -349,6 +354,28 @@ describe("Experiment Explorer", () => {
           },
         ],
         status_counts_by_spec: { simulated_annealing: { COMPLETED: 2 } },
+        runs: [
+          {
+            spec: "simulated_annealing",
+            algorithm_id: "simulated_annealing",
+            seed: 0,
+            repetition: 0,
+            feasible: true,
+            objective: 70,
+            elapsed_s: 0.2,
+            termination_reason: "iteration_limit",
+          },
+          {
+            spec: "simulated_annealing",
+            algorithm_id: "simulated_annealing",
+            seed: 1,
+            repetition: 1,
+            feasible: true,
+            objective: 72,
+            elapsed_s: 0.2,
+            termination_reason: "iteration_limit",
+          },
+        ],
       }),
     });
     renderWith(<ExperimentExplorer />);
@@ -358,6 +385,7 @@ describe("Experiment Explorer", () => {
     const stats = screen.getByRole("table", { name: "Suite statistics" });
     expect(within(stats).getByText("1.414")).toBeTruthy();
     expect(within(stats).getByText("2/2")).toBeTruthy();
+    expect(screen.getByTestId("seed-chart").textContent).toBe("simulated_annealing:2");
     expect(screen.getByRole("link", { name: /Export CSV/ }).getAttribute("href")).toMatch(
       /suites\/suite-1\/export\?format=csv$/,
     );
