@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any
 
 from trafiqon.domain.models import Customer, Depot, Edge, Graph, Node, Scenario, Vehicle
@@ -97,3 +99,9 @@ def scenario_from_dict(data: dict[str, Any]) -> Scenario:
             for v in data["vehicles"]
         ),
     )
+
+
+def scenario_fingerprint(scenario: Scenario) -> str:
+    """SHA-256 of the canonical JSON form; identical content gives an identical fingerprint."""
+    canonical = json.dumps(scenario_to_dict(scenario), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

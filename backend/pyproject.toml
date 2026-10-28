@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.162.0",
     "numpy>=2.1",
+    "ortools>=9.15.6755",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -36,3 +37,4 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 testpaths = ["tests"]
 pythonpath = ["tests"]
 addopts = "-q"
+filterwarnings = ["ignore:builtin type .* has no __module__ attribute:DeprecationWarning"]

@@ -8,3 +8,4 @@ htmlcov/
 node_modules/
 .next/
 .env
+results/

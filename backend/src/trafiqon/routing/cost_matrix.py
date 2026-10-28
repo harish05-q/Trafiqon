@@ -82,14 +82,16 @@ def check_reachability(
     depot_node = {d.id: d.node_id for d in scenario.depots}
     issues: list[ReachabilityIssue] = []
     for customer in scenario.customers:
+        big_enough = [v for v in scenario.vehicles if v.capacity >= customer.demand]
+        if not big_enough:
+            continue  # a capacity problem, reported by validate_scenario, not reachability
         servable = any(
             matrix.leg(depot_node[v.start_depot_id], customer.node_id) is not None
             and any(
                 matrix.leg(customer.node_id, depot_node[end]) is not None
                 for end in v.allowed_end_depots
             )
-            for v in scenario.vehicles
-            if v.capacity >= customer.demand
+            for v in big_enough
         )
         if not servable:
             issues.append(
