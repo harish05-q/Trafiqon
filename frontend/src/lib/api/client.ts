@@ -1,5 +1,8 @@
 import type {
   AlgorithmInfoFull,
+  ReplanReport,
+  SimAction,
+  SimulationState,
   RunFilters,
   ScenarioData,
   ScenarioValidation,
@@ -127,4 +130,40 @@ export const api = {
   suiteComparison: (id: string) => request<SuiteComparison>(`/api/v1/suites/${id}/comparison`),
   suiteExportUrl: (id: string, format: "json" | "csv") =>
     `${API_BASE_URL}/api/v1/suites/${id}/export?format=${format}`,
+
+  createSimulation: (body: {
+    scenario_version_id: string;
+    run_id?: string | null;
+    speed?: number;
+  }) =>
+    request<SimulationState>("/api/v1/simulations", { method: "POST", body: JSON.stringify(body) }),
+  getSimulation: (id: string) => request<SimulationState>(`/api/v1/simulations/${id}`),
+  controlSimulation: (id: string, body: { action: SimAction; ticks?: number; speed?: number }) =>
+    request<SimulationState>(`/api/v1/simulations/${id}/control`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  replanSimulation: (id: string) =>
+    request<{ replan: ReplanReport; state: SimulationState }>(`/api/v1/simulations/${id}/replan`, {
+      method: "POST",
+    }),
+  createIncident: (
+    id: string,
+    body: { edge_ids: string[]; kind: "closure" | "slowdown"; factor?: number },
+  ) =>
+    request<SimulationState>(`/api/v1/simulations/${id}/incidents`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  resolveIncident: (id: string, incidentId: string) =>
+    request<SimulationState>(`/api/v1/simulations/${id}/incidents/${incidentId}/resolve`, {
+      method: "POST",
+    }),
+  updateRoad: (id: string, body: { edge_id: string; closed?: boolean; traffic_factor?: number }) =>
+    request<SimulationState>(`/api/v1/simulations/${id}/roads`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  deleteSimulation: (id: string) =>
+    request<void>(`/api/v1/simulations/${id}`, { method: "DELETE" }),
 };

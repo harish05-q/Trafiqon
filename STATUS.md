@@ -8,7 +8,7 @@ Update this file at the end of every work session. It is the source of truth aft
 
 ## Current milestone
 
-M6 done (2026-10-28), not yet committed (M5 is commit 2960cc4). Next: M7 (simulation + incident-driven replanning). Postgres runs via `docker compose up -d db` (Docker Desktop must be running).
+M7 done (2026-10-29), not yet committed (M6 is commit f0770f0). Next: M8 (hardening, benchmarks, docs, Compose stack, CI). Postgres runs via `docker compose up -d db` (Docker Desktop must be running).
 
 
 
@@ -34,7 +34,7 @@ M6 done (2026-10-28), not yet committed (M5 is commit 2960cc4). Next: M7 (simula
 
 | 6 | Four workspaces end to end | done | Command Center (compare routes), Algorithm Lab (param specs, convergence), Scenario Studio (edit/validate/save version), Experiment Explorer (run comparison, suites, export); 58 Vitest; Playwright E2E 1-4 pass on the real stack (2026-10-28) |
 
-| 7 | Simulation + replanning | todo | |
+| 7 | Simulation + replanning | done | Deterministic tick engine (exact intra-tick timing, no teleporting), defined traffic/closure-on-edge semantics, layered incidents, state-preserving replan with latency/disruption, real-time sessions, simulation API, Command Center UI, Playwright E2E 5 (2026-10-29) |
 
 | 8 | Hardening, benchmarks, docs | todo | |
 
@@ -112,6 +112,10 @@ M6 done (2026-10-28), not yet committed (M5 is commit 2960cc4). Next: M7 (simula
 - D24 (2026-10-28): New endpoints: `POST /scenarios/validate` (structure, capacity, reachability, strongly connected components via iterative Tarjan in `routing/connectivity.py`; `feasible_so_far` is explicitly not a proof); run filters `scenario_id`, `created_after`, `created_before`.
 - D25 (2026-10-28): Per-workspace themes: operational workspaces start dark, Experiment Explorer starts light (one theme per workspace, never mixed). One SSE EventSource per active run, mounted in the shell; logs shared through a store. Command Center "compare routes" overlays another completed run's routes (dotted, series colour). Simulation, incidents and replanning are NOT in M6 (M7): the top bar says "Simulation: not available".
 - D26 (2026-10-28): E2E stack: Playwright starts the API (:8100, waits on /health because webServers start before globalSetup) and a production build (:3100); globalSetup drops/recreates `trafiqon_e2e`, migrates from clean, and spawns a real worker process. Explicit 127.0.0.1 URLs (Node resolves localhost to ::1).
+- D27 (2026-10-29): Simulation sessions live in the API process memory (bounded by `max_simulations`, idle TTL), with a per-session lock; not persisted frame by frame (SPEC_FULL 12) and lost on API restart (the UI says so). Assumes a single API process; persisting a command log for replay is possible because the engine is deterministic per (tick, command).
+- D28 (2026-10-29): Engine semantics: position = progress in [0,1] on an edge; a tick's time budget is spent exactly (zero-time transitions such as stop completion happen even with no budget left). Traffic change on the current edge keeps progress and re-times the remainder; closures block entry only (a vehicle on a newly closed edge finishes it); a closed next edge -> `blocked` until reopen or replan. Conditions are layered (original, manual factor, manual closure, incidents) and recomputed on resolve.
+- D29 (2026-10-29): Replanning keeps the clock, positions, the edge in progress and completed stops; each vehicle keeps its own remaining customers (goods on board) plus previously unserved ones; order = exact permutations up to 7 stops (tested never worse than the old order), else cheapest insertion + 2-opt. Unreachable stops -> `unserved`; unreachable end depot -> stranded vehicle reported (serves stops at its own node); the simulation is never reported finished while a vehicle is stranded. Latency is measured; disruption (stops reordered, segments changed) is derived.
+- D30 (2026-10-29): Real-time playback converts wall time into whole ticks with carry at `speed` simulated min/s (fixed set 0.25-30), at most 20,000 ticks per request. The frontend polls every 400 ms while running and only interpolates marker movement with a CSS transition (off under reduced motion).
 - D4 (2026-10-28): Docker Compose uses `postgres:18`, matching the locally installed PostgreSQL 18.1 binaries. Worker uses sync SQLAlchemy/psycopg to avoid Windows asyncio event-loop issues with psycopg async.
 
 
@@ -260,7 +264,16 @@ M6 done (2026-10-28), not yet committed (M5 is commit 2960cc4). Next: M7 (simula
 - Visual review from Playwright screenshots (first time the map was seen rendered): routes, congestion, depots/customers, the light Explorer theme and the convergence chart all render. Fixed from the review: dimmed routes kept orange arrowheads; selected road was indistinct; legend permanently covered the map (now collapsible). One blank chart screenshot was a capture-timing issue (verified rendered: 34 SVG paths).
 - Repaired one STATUS.md line that an earlier edit had written in cp1252; all repo text files now decode as UTF-8.
 
+2026-10-29 (M7):
+- `cd backend && uv run pytest` -> `320 passed in 43.33s` (adds 33 simulation unit tests and 6 simulation API integration tests). First run of the new unit tests: 6 failures. Real engine bug: arrivals exactly at a tick boundary completed one tick late (fixed: zero-time transitions). Real replan bug: an unreachable end depot raised instead of being reported (fixed with an explicit stranded policy). Plus one wrong test expectation (equal-cost orders on the line graph), replaced by a property test.
+- `uv run ruff check .` -> `All checks passed!`; `ruff format --check .` -> `74 files already formatted`.
+- `cd frontend && npm test` -> `Tests 66 passed`; `npm run lint` clean; `tsc --noEmit` clean.
+- `cd frontend && npx playwright test` -> 6 passed (E2E 1-5 + screenshots); E2E 5 passed on its first run. Final rerun after the UI fixes below: `6 passed (50.9s)`, and the new simulation screenshot shows the fixes.
+- Integration check: simulated driving time of a completed run's plan == its evaluator objective when nothing changes.
+- Visual review (Playwright screenshot mid-simulation with an incident and a replan): vehicles render at backend positions with remaining paths. Fixed from the review: vehicle labels showed the internal node id (`vehicle:v2`); the inspector showed the ORIGINAL road status ("normal") for a road closed in the simulation (now uses the simulation's effective roads; regression test added); a selected closed road lost its dash pattern.
+
 ## Known defects and open items
+- M7: simulation sessions are in-memory (single API process, lost on restart; D27). No service time at stops (arrival = service). Customers are never reassigned between vehicles during replanning (deliberate, D29). Replanning uses its own exact/heuristic ordering, not the QPSO/SA/OR-Tools optimizers.
 - M6: no Playwright E2E 5 (simulation, M7) or 6 (export metadata vs stored result, M8). Studio has no undo; multiple end depots per vehicle are not editable in the Studio (the API supports them). The run history table has no objective column (results are fetched per selected run). Screenshots were reviewed at 1440x900 only.
 
 - M5: the map's visual rendering (React Flow edges/route overlay) was NOT verified by screenshot: the browser pane could not composite frames while the Claude window was not in view, and React Flow does not measure nodes then (36 nodes in the DOM, edges not drawn). Component tests cover what is handed to the renderer; a visual check is still owed. No ECharts convergence chart yet (M6/M8). Light theme exists but no workspace defaults to it yet. Small-screen layout stacks panels under the map; not tested on a device.

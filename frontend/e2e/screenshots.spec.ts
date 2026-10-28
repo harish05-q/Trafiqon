@@ -22,6 +22,28 @@ test("capture workspaces", async ({ page, request }) => {
   await page.getByRole("region", { name: "Best solution" }).getByRole("button").first().click();
   await page.screenshot({ path: "test-results/screens/command-center.png" });
 
+  // Simulation mid-way, with a slowdown incident on a road one vehicle still has to drive.
+  const simulate = page.getByRole("button", { name: /Simulate the active run/ });
+  await expect(simulate).toBeEnabled();
+  await simulate.click();
+  const panel = page.getByRole("region", { name: "Simulation" });
+  for (let i = 0; i < 12; i++) await panel.getByRole("button", { name: "Step" }).click();
+  await expect(panel).toContainText("0:06.0");
+  const simId = await page.evaluate(
+    () => JSON.parse(localStorage.getItem("trafiqon.workspace.v2")!).state.simulationId as string,
+  );
+  const sim = await (await request.get(api(`/simulations/${simId}`))).json();
+  const ahead = sim.vehicles.find(
+    (v: { remaining_edge_ids: string[] }) => v.remaining_edge_ids.length > 3,
+  ).remaining_edge_ids[2];
+  await page.locator(`[data-edge-id="${ahead}"] .road-edge-hit`).click({ force: true });
+  await page.getByRole("button", { name: "Incident: close road" }).click();
+  await panel.getByRole("button", { name: "Replan" }).click();
+  await expect(panel.getByLabel("Last replan")).toBeVisible();
+  await page.waitForTimeout(500); // let the 400 ms marker transition settle for the capture
+  await page.screenshot({ path: "test-results/screens/simulation.png" });
+  await panel.getByRole("button", { name: "Close simulation" }).click();
+
   await page
     .getByRole("navigation", { name: "Workspaces" })
     .getByRole("link", { name: "Algorithm Lab" })

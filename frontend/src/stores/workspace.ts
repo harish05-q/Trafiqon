@@ -34,12 +34,14 @@ export interface WorkspaceState {
   versionId: string | null;
   activeRunId: string | null;
   compareRunId: string | null;
+  simulationId: string | null;
   selection: Selection;
   panels: { left: boolean; right: boolean; bottom: boolean };
   toggleTheme: (workspace: WorkspaceKey) => void;
   setVersion: (versionId: string | null) => void;
   setActiveRun: (runId: string | null) => void;
   setCompareRun: (runId: string | null) => void;
+  setSimulation: (id: string | null) => void;
   select: (selection: Selection) => void;
   togglePanel: (panel: keyof WorkspaceState["panels"]) => void;
 }
@@ -67,6 +69,7 @@ export const useWorkspace = create<WorkspaceState>()(
       versionId: null,
       activeRunId: null,
       compareRunId: null,
+      simulationId: null,
       selection: null,
       panels: { left: true, right: true, bottom: true },
       toggleTheme: (ws) =>
@@ -77,7 +80,13 @@ export const useWorkspace = create<WorkspaceState>()(
         set((s) =>
           s.versionId === versionId
             ? s
-            : { versionId, selection: null, activeRunId: null, compareRunId: null },
+            : {
+                versionId,
+                selection: null,
+                activeRunId: null,
+                compareRunId: null,
+                simulationId: null,
+              },
         ),
       setActiveRun: (activeRunId) =>
         set((s) => ({
@@ -85,6 +94,7 @@ export const useWorkspace = create<WorkspaceState>()(
           compareRunId: s.compareRunId === activeRunId ? null : s.compareRunId,
         })),
       setCompareRun: (compareRunId) => set({ compareRunId }),
+      setSimulation: (simulationId) => set({ simulationId }),
       select: (selection) => set({ selection }),
       togglePanel: (panel) => set((s) => ({ panels: { ...s.panels, [panel]: !s.panels[panel] } })),
     }),
@@ -96,6 +106,7 @@ export const useWorkspace = create<WorkspaceState>()(
         versionId: s.versionId,
         activeRunId: s.activeRunId,
         compareRunId: s.compareRunId,
+        simulationId: s.simulationId,
         panels: s.panels,
       }),
     },

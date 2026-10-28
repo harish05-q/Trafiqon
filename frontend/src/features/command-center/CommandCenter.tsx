@@ -6,7 +6,9 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/status";
 import { WorkspaceLayout } from "@/components/shell/WorkspaceLayout";
 import { NetworkCanvas } from "@/features/network/NetworkCanvas";
 import type { RouteOverlay } from "@/features/network/toFlow";
-import { useRun, useRunResult, useVersion } from "@/lib/api/hooks";
+import { SimulationPanel } from "@/features/simulation/SimulationPanel";
+import { effectiveScenario, simRoutes, vehicleMarkers } from "@/features/simulation/simView";
+import { useRun, useRunResult, useSimulation, useVersion } from "@/lib/api/hooks";
 import type { RunResultOut } from "@/lib/api/types";
 import { useWorkspace } from "@/stores/workspace";
 import { Inspector } from "./Inspector";
@@ -39,6 +41,20 @@ export function CommandCenter() {
     compareRun.data?.scenario_version_id === versionId ? compareRun.data : undefined;
   const compareResult = useRunResult(compareForVersion);
   const altRoutes = useMemo(() => routesFromResult(compareResult.data), [compareResult.data]);
+  const simulationId = useWorkspace((s) => s.simulationId);
+  const simQuery = useSimulation(simulationId);
+  const sim = simQuery.data?.scenario_version_id === versionId ? simQuery.data : undefined;
+  const simView = useMemo(
+    () =>
+      sim && version.data
+        ? {
+            scenario: effectiveScenario(version.data.data, sim),
+            routes: simRoutes(sim),
+            vehicles: vehicleMarkers(sim),
+          }
+        : null,
+    [sim, version.data],
+  );
 
   let center: React.ReactNode;
   if (!versionId) {
@@ -60,7 +76,17 @@ export function CommandCenter() {
       </div>
     );
   } else {
-    center = <NetworkCanvas scenario={version.data.data} routes={routes} altRoutes={altRoutes} />;
+    center = simView ? (
+      // While simulating, the map shows the simulation's road conditions, each vehicle's
+      // remaining planned path and the vehicles themselves (all from backend state).
+      <NetworkCanvas
+        scenario={simView.scenario}
+        routes={simView.routes}
+        vehicles={simView.vehicles}
+      />
+    ) : (
+      <NetworkCanvas scenario={version.data.data} routes={routes} altRoutes={altRoutes} />
+    );
   }
 
   return (
@@ -69,19 +95,21 @@ export function CommandCenter() {
         <>
           <ScenarioPanel />
           <RunLauncher />
+          {versionId && <SimulationPanel run={runForVersion} versionId={versionId} />}
         </>
       }
       center={center}
       right={
         version.data ? (
           <Inspector
-            scenario={version.data.data}
+            scenario={simView?.scenario ?? version.data.data}
             run={runForVersion}
             result={result.data}
             resultLoading={result.isLoading}
             resultError={result.error}
             compareRun={compareForVersion}
             compareResult={compareResult.data}
+            simulation={sim}
           />
         ) : (
           <div className="p-3">

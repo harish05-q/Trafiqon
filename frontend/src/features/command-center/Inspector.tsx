@@ -4,9 +4,10 @@ import { EmptyState, ErrorState, LoadingState, Section, Stat } from "@/component
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import { trafficState } from "@/features/network/toFlow";
+import { RoadActions } from "@/features/simulation/RoadActions";
 import { useRuns } from "@/lib/api/hooks";
 import { ALGORITHM_LABELS } from "./RunLauncher";
-import type { RunOut, RunResultOut, ScenarioOut } from "@/lib/api/types";
+import type { RunOut, RunResultOut, ScenarioOut, SimulationState } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 import { useWorkspace, type Selection } from "@/stores/workspace";
 
@@ -115,6 +116,7 @@ export function Inspector({
   resultError,
   compareRun,
   compareResult,
+  simulation,
 }: {
   scenario: ScenarioOut;
   run: RunOut | undefined;
@@ -123,6 +125,7 @@ export function Inspector({
   resultError: Error | null;
   compareRun?: RunOut;
   compareResult?: RunResultOut;
+  simulation?: SimulationState;
 }) {
   const selection = useWorkspace((s) => s.selection);
   const select = useWorkspace((s) => s.select);
@@ -130,6 +133,9 @@ export function Inspector({
     <>
       <Section title="Inspector">
         <SelectionDetails selection={selection} scenario={scenario} result={result} />
+        {simulation && selection?.kind === "edge" && (
+          <RoadActions sim={simulation} edgeId={selection.id} />
+        )}
       </Section>
       <Section title="Best solution">
         {!run && <EmptyState>No active run.</EmptyState>}

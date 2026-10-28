@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
-import { useHealth, useVersion } from "@/lib/api/hooks";
+import { formatSimTime } from "@/features/simulation/simView";
+import { useHealth, useSimulation, useVersion } from "@/lib/api/hooks";
 import { cn } from "@/lib/utils";
 import { ActiveRunStream } from "@/lib/api/events";
 import { useWorkspace, workspaceFromPath } from "@/stores/workspace";
@@ -42,6 +43,23 @@ function ServiceStatus() {
     <span className={cn("flex items-center gap-1.5 text-xs", tone)} role="status">
       <span aria-hidden="true" className="inline-block size-1.5 rounded-full bg-current" />
       {label}
+    </span>
+  );
+}
+
+function SimulationStatus() {
+  const simulationId = useWorkspace((s) => s.simulationId);
+  const sim = useSimulation(simulationId);
+  if (!simulationId || !sim.data) {
+    return <span className="text-text-muted hidden text-xs md:inline">Simulation: none</span>;
+  }
+  return (
+    <span className="hidden text-xs md:inline" role="status">
+      Simulation: {sim.data.status}{" "}
+      <span className="num text-muted-foreground">
+        {formatSimTime(sim.data.time_min)} · {sim.data.served_count}/{sim.data.customer_count}{" "}
+        served
+      </span>
     </span>
   );
 }
@@ -93,12 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
         <div className="ml-auto flex min-w-0 items-center gap-4">
           <CurrentScenario />
-          <span
-            className="text-text-muted hidden text-xs md:inline"
-            title="Simulation arrives in M7"
-          >
-            Simulation: not available
-          </span>
+          <SimulationStatus />
           <ServiceStatus />
           <Button
             variant="ghost"

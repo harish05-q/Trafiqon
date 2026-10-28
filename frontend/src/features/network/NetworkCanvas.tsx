@@ -14,12 +14,14 @@ import { useMemo } from "react";
 import type { ScenarioOut } from "@/lib/api/types";
 import { useWorkspace } from "@/stores/workspace";
 import { Legend } from "./Legend";
-import { RoadEdgeView, RoadNodeView } from "./RoadElements";
-import { toFlow, type RouteOverlay } from "./toFlow";
+import { RoadEdgeView, RoadNodeView, VehicleNodeView } from "./RoadElements";
+import type { VehicleMarker } from "@/features/simulation/simView";
+import { SCALE, toFlow, type RouteOverlay } from "./toFlow";
 
-const nodeTypes: NodeTypes = { road: RoadNodeView };
+const nodeTypes: NodeTypes = { road: RoadNodeView, vehicle: VehicleNodeView };
 const edgeTypes: EdgeTypes = { road: RoadEdgeView };
 const NO_ROUTES: RouteOverlay[] = [];
+const NO_VEHICLES: VehicleMarker[] = [];
 
 function markerColor(traffic: string, onRoute: boolean, dimmed: boolean): string {
   if (onRoute) return dimmed ? "var(--tq-road)" : "var(--tq-route)";
@@ -32,10 +34,12 @@ export function NetworkCanvas({
   scenario,
   routes = NO_ROUTES,
   altRoutes = NO_ROUTES,
+  vehicles = NO_VEHICLES,
 }: {
   scenario: ScenarioOut;
   routes?: RouteOverlay[];
   altRoutes?: RouteOverlay[];
+  vehicles?: VehicleMarker[];
 }) {
   const selection = useWorkspace((s) => s.selection);
   const select = useWorkspace((s) => s.select);
@@ -49,7 +53,18 @@ export function NetworkCanvas({
       selectedVehicleId: selection?.kind === "route" ? selection.vehicleId : null,
     });
     return {
-      nodes: flow.nodes,
+      nodes: [
+        ...flow.nodes,
+        ...vehicles.map((v) => ({
+          id: `vehicle:${v.id}`,
+          type: "vehicle",
+          position: { x: v.x * SCALE, y: v.y * SCALE },
+          draggable: false,
+          selectable: false,
+          zIndex: 10,
+          data: { vehicleId: v.id, label: v.label, status: v.status },
+        })),
+      ],
       edges: flow.edges.map((e) => ({
         ...e,
         markerEnd: {
@@ -60,7 +75,7 @@ export function NetworkCanvas({
         },
       })),
     };
-  }, [scenario, routes, altRoutes, selection]);
+  }, [scenario, routes, altRoutes, vehicles, selection]);
 
   return (
     <div
@@ -77,7 +92,7 @@ export function NetworkCanvas({
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable={false}
-        onNodeClick={(_, n) => select({ kind: "node", id: n.id })}
+        onNodeClick={(_, n) => n.type === "road" && select({ kind: "node", id: n.id })}
         onEdgeClick={(_, e) => select({ kind: "edge", id: e.id })}
         onPaneClick={() => select(null)}
         fitView

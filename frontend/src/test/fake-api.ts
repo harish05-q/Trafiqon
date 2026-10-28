@@ -9,6 +9,7 @@ import type {
   RunResultOut,
   ScenarioOut,
   ScenarioRecord,
+  SimulationState,
   VersionOut,
 } from "@/lib/api/types";
 
@@ -286,4 +287,51 @@ export class FakeEventSource {
   close() {
     this.readyState = 2;
   }
+}
+
+export function simState(over: Partial<SimulationState> = {}): SimulationState {
+  return {
+    id: "sim-1",
+    scenario_version_id: "ver-1",
+    run_id: "run-1",
+    plan_source: "run",
+    created_at: "2026-10-29T00:00:00Z",
+    status: "ready",
+    speed: 1,
+    speeds: [0.25, 0.5, 1, 2, 5, 10, 30],
+    tick: 0,
+    time_min: 0,
+    tick_minutes: 0.5,
+    plan_version: 0,
+    vehicles: [
+      {
+        id: "v1",
+        status: "en_route",
+        capacity: 10,
+        end_depot_id: "d1",
+        node: null,
+        edge_id: "n0->n1",
+        progress: 0.25,
+        x: 0.25,
+        y: 0,
+        remaining_on_edge_min: 1.5,
+        completed: [],
+        remaining_stops: ["c1"],
+        unserved: [],
+        remaining_edge_ids: ["n0->n1", "n1->n0"],
+        distance_km: 0,
+        driving_min: 0.5,
+        load_delivered: 0,
+      },
+    ],
+    incidents: [],
+    road_overrides: [],
+    traffic_factors: {},
+    manual_closures: [],
+    events: [],
+    last_replan: null,
+    served_count: 0,
+    customer_count: 1,
+    ...over,
+  };
 }

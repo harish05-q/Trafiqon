@@ -32,6 +32,7 @@ class Limits:
     max_export_runs: int = 1_000
     max_progress_events_per_run: int = 200
     page_size_max: int = 100
+    max_simulations: int = 20
 
     @classmethod
     def from_env(cls) -> Limits:
@@ -59,6 +60,8 @@ class Settings:
     # SSE
     sse_poll_interval_s: float = 0.5
     sse_max_duration_s: float = 600.0
+    # Simulation sessions (in-memory)
+    simulation_idle_ttl_s: float = 3600.0
 
     @classmethod
     def from_env(cls) -> Settings:

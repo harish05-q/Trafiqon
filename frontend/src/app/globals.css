@@ -209,11 +209,11 @@
 .road-edge.on-route.dimmed {
   stroke-opacity: 0.3;
 }
-/* Selection is a neutral high-contrast stroke so it never reads as a route or incident. */
+/* Selection is a neutral high-contrast stroke so it never reads as a route or incident;
+   a closed road keeps its dash pattern while selected. */
 .road-edge.selected {
   stroke: var(--tq-text);
   stroke-width: 4;
-  stroke-dasharray: none;
 }
 .road-edge-hit {
   fill: none;
@@ -279,4 +279,44 @@
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* Simulation vehicles: positions are authoritative from the backend; the transition only
+   interpolates between updates (removed under prefers-reduced-motion). */
+.react-flow__node-vehicle {
+  pointer-events: none;
+  transition: transform 400ms linear;
+}
+.vehicle-marker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin: -2px 0 0 -2px;
+  border-radius: 9999px;
+  background: var(--tq-bg);
+  border: 3px solid var(--tq-signal);
+  color: var(--tq-incident);
+  font: 700 9px/1 var(--font-mono);
+}
+.vehicle-marker.blocked {
+  border-color: var(--tq-incident);
+  border-style: dashed;
+}
+.vehicle-marker.finished,
+.vehicle-marker.idle {
+  border-color: var(--tq-disabled);
+}
+.vehicle-label {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 3px;
+  border-radius: 2px;
+  background: var(--tq-bg);
+  color: var(--tq-text);
+  font: 600 9px/1.3 var(--font-mono);
+  white-space: nowrap;
 }

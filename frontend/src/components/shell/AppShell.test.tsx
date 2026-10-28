@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_THEMES, useWorkspace, workspaceFromPath } from "@/stores/workspace";
-import { installFetch } from "@/test/fake-api";
+import { installFetch, simState } from "@/test/fake-api";
 import { AppShell, WORKSPACES } from "./AppShell";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/command-center" }));
@@ -86,9 +86,19 @@ describe("AppShell", () => {
     expect(workspaceFromPath("/unknown")).toBe("command-center");
   });
 
-  it("says simulation is not available rather than showing a fake state", () => {
+  it("shows no simulation state unless the backend has a session", async () => {
+    useWorkspace.setState({ simulationId: null });
     installFetch({});
     renderShell();
-    expect(screen.getByText("Simulation: not available")).toBeTruthy();
+    expect(screen.getByText("Simulation: none")).toBeTruthy();
+    cleanup();
+    useWorkspace.setState({ simulationId: "sim-1" });
+    installFetch({
+      "GET /api/v1/simulations/sim-1": () => simState({ status: "paused", time_min: 75.5 }),
+    });
+    renderShell();
+    const status = await screen.findByText(/Simulation: paused/);
+    expect(status.textContent).toContain("1:15.5");
+    expect(status.textContent).toContain("0/1 served");
   });
 });

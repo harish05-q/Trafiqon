@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from trafiqon import __version__
 from trafiqon.api.deps import AppState
 from trafiqon.api.errors import install_error_handlers
-from trafiqon.api.routers import health, runs, scenarios, suites
+from trafiqon.api.routers import health, runs, scenarios, simulations, suites
 from trafiqon.api.routes import router as builtin_router
 from trafiqon.persistence.db import make_engine, make_session_factory
 from trafiqon.settings import Settings
@@ -48,6 +48,7 @@ def create_app(
         expose_headers=["Location"],
     )
     install_error_handlers(app)
+    simulations.install(app, settings)
     for router in (
         health.router,
         builtin_router,

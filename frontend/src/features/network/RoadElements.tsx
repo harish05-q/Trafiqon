@@ -1,6 +1,6 @@
 "use client";
 
-import { Handle, Position, type EdgeProps, type NodeProps } from "@xyflow/react";
+import { Handle, Position, type EdgeProps, type Node, type NodeProps } from "@xyflow/react";
 import { memo } from "react";
 
 import { offsetSegment, type RoadEdge, type RoadNode } from "./toFlow";
@@ -65,5 +65,24 @@ export const RoadEdgeView = memo(function RoadEdgeView({
       <path d={d} className="road-edge-hit" />
       <path d={d} className={cls} markerEnd={markerEnd} />
     </g>
+  );
+});
+
+export interface VehicleNodeData extends Record<string, unknown> {
+  vehicleId: string;
+  label: string;
+  status: string;
+}
+
+/** Vehicle marker at the backend-computed position. Movement between authoritative updates
+ * is a CSS transition only (interpolation); it is disabled for reduced motion. */
+export const VehicleNodeView = memo(function VehicleNodeView({
+  data,
+}: NodeProps<Node<VehicleNodeData, "vehicle">>) {
+  return (
+    <div className={`vehicle-marker ${data.status}`} title={data.label} aria-label={data.label}>
+      <span aria-hidden="true">{data.status === "blocked" ? "!" : ""}</span>
+      <span className="vehicle-label">{data.vehicleId}</span>
+    </div>
   );
 });

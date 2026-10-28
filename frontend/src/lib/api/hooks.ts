@@ -10,6 +10,7 @@ import {
   type RunFilters,
   type RunOut,
   type ScenarioData,
+  type SimulationState,
   type SuiteSpec,
 } from "./types";
 
@@ -201,6 +202,36 @@ export function useLaunchSuite() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["suites"] });
       qc.invalidateQueries({ queryKey: ["runs"] });
+    },
+  });
+}
+
+// --- M7 simulation ---------------------------------------------------------------------------
+
+export const simKey = (id: string) => ["simulations", id] as const;
+
+/** Authoritative simulation state; polled while running (the backend advances the clock). */
+export function useSimulation(id: string | null) {
+  return useQuery({
+    queryKey: simKey(id ?? ""),
+    queryFn: () => api.getSimulation(id!),
+    enabled: !!id,
+    retry: false,
+    refetchInterval: (q) => (q.state.data?.status === "running" ? 400 : false),
+  });
+}
+
+/** Mutations return the new authoritative state, which replaces the cached one. */
+export function useSimulationCommand<V>(
+  id: string | null,
+  fn: (id: string, v: V) => Promise<SimulationState | { state: SimulationState }>,
+) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: V) => fn(id!, v),
+    onSuccess: (out) => {
+      const state = "state" in out && !("vehicles" in out) ? out.state : (out as SimulationState);
+      qc.setQueryData(simKey(state.id), state);
     },
   });
 }

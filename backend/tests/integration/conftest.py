@@ -95,7 +95,7 @@ def settings(pg_url) -> Settings:
         progress_event_min_interval_s=0.0,
         worker_poll_interval_s=0.05,
         sse_poll_interval_s=0.05,
-        limits=Limits(max_queued_runs=50, max_suite_runs=30),
+        limits=Limits(max_queued_runs=50, max_suite_runs=30, max_simulations=5),
     )
 
 

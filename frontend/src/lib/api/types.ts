@@ -347,3 +347,90 @@ export interface SuiteComparison {
   status_counts_by_spec: Record<string, Partial<Record<RunStatus, number>>>;
   complete: boolean;
 }
+
+// --- M7 simulation ---------------------------------------------------------------------------
+
+export type SimStatus = "ready" | "running" | "paused" | "finished";
+export type VehicleSimStatus = "en_route" | "blocked" | "finished" | "idle";
+
+export interface SimVehicle {
+  id: string;
+  status: VehicleSimStatus;
+  capacity: number;
+  end_depot_id: string;
+  node: string | null;
+  edge_id: string | null;
+  progress: number | null;
+  x: number | null;
+  y: number | null;
+  remaining_on_edge_min?: number;
+  completed: { customer_id: string; time: number; node: string }[];
+  remaining_stops: string[];
+  unserved: string[];
+  remaining_edge_ids: string[];
+  distance_km: number;
+  driving_min: number;
+  load_delivered: number;
+}
+
+export interface SimIncident {
+  id: string;
+  kind: "closure" | "slowdown";
+  edge_ids: string[];
+  factor: number;
+  created_at: number;
+  resolved_at: number | null;
+  active: boolean;
+}
+
+export interface ReplanReport {
+  plan_version: number;
+  time: number;
+  tick: number;
+  latency_ms: number;
+  stops_reordered: number;
+  edges_changed: number;
+  unserved: string[];
+  vehicles: {
+    vehicle_id: string;
+    old_stops: string[];
+    new_stops: string[];
+    unserved: string[];
+    end_depot_reachable: boolean;
+    stops_reordered: number;
+    edges_changed: number;
+    remaining_time_min: number | null;
+  }[];
+}
+
+export interface SimulationState {
+  id: string;
+  scenario_version_id: string;
+  run_id: string | null;
+  plan_source: "run" | "construction";
+  created_at: string;
+  status: SimStatus;
+  speed: number;
+  speeds: number[];
+  tick: number;
+  time_min: number;
+  tick_minutes: number;
+  plan_version: number;
+  vehicles: SimVehicle[];
+  incidents: SimIncident[];
+  road_overrides: {
+    edge_id: string;
+    closed: boolean;
+    current_time: number;
+    original_current_time: number;
+    original_closed: boolean;
+  }[];
+  traffic_factors: Record<string, number>;
+  manual_closures: string[];
+  events: ({ time: number; tick: number; type: string } & Record<string, unknown>)[];
+  last_replan: ReplanReport | null;
+  served_count: number;
+  customer_count: number;
+}
+
+export type SimAction = "start" | "pause" | "resume" | "step" | "reset" | "speed";
