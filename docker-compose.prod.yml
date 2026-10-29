@@ -1,0 +1,73 @@
+# Production override for a single public server (see docs/deployment.md):
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file deploy/.env up -d --build
+# Differences from the local stack: only Caddy is published (80/443, HTTPS + password),
+# the database password comes from the env file, the web app calls the API on its own
+# origin (/api/...), and container logs are size-capped.
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+x-database-url: &database-url
+  TRAFIQON_DATABASE_URL: postgresql+psycopg://trafiqon:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the env file}@db:5432/trafiqon
+
+services:
+  db:
+    <<: *logging
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the env file}
+    ports: !reset []
+    restart: unless-stopped
+
+  migrate:
+    <<: *logging
+    environment:
+      <<: *database-url
+
+  api:
+    <<: *logging
+    environment:
+      <<: *database-url
+      TRAFIQON_CORS_ORIGINS: ${PUBLIC_WEB_URL:?set PUBLIC_WEB_URL in the env file}
+    ports: !reset []
+
+  worker:
+    <<: *logging
+    environment:
+      <<: *database-url
+
+  web:
+    <<: *logging
+    build:
+      args:
+        # Empty = same origin: the browser calls /api/v1/... on the site it was served from.
+        NEXT_PUBLIC_API_BASE_URL: ""
+    ports: !reset []
+
+  caddy:
+    <<: *logging
+    image: caddy:2.10-alpine
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in the env file}
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:?set BASIC_AUTH_USER in the env file}
+      BASIC_AUTH_HASH: ${BASIC_AUTH_HASH:?set BASIC_AUTH_HASH in the env file}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

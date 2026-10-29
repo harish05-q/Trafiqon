@@ -122,6 +122,7 @@ M8 done and committed (2026-10-29). All planned milestones (M0-M8) are done; see
 - D34 (2026-10-29): CI (`.github/workflows/ci.yml`): backend (Postgres 18 service, ruff, pytest), frontend (lint, Vitest, build), E2E (Playwright, artifacts on failure), and image builds. Validated as YAML locally only; it has NOT run on GitHub (no remote configured).
 - D35 (2026-10-29): Scrollable workspace panels are focusable (`tabIndex=0` + aria-label) so keyboard users can scroll them (WCAG 2.1.1, axe scrollable-region-focusable). The keyboard E2E accepts either the token outline or the shadcn focus ring as the visible focus indicator. Map nodes/vehicle markers with an aria-label get `role="img"`.
 - D36 (2026-10-29): The axe audit excludes only React Flow's attribution link (third-party). Audits run on the production build with real data, including a mid-simulation state.
+- D37 (2026-10-29): Free public deployment = one Oracle Cloud Always Free Ampere A1 VM running the whole Compose stack, because the worker must run continuously and simulation sessions need one long-lived API process (free PaaS tiers sleep or lack workers). `docker-compose.prod.yml` + `deploy/Caddyfile`: only Caddy is published (automatic HTTPS, basic auth for the whole site, since the app has no accounts), DB password from `deploy/.env`, the web app built with an empty API base URL so it calls `/api/...` on its own origin (no CORS, auth covers the API and SSE), log rotation. Guide: `docs/deployment.md`.
 - D4 (2026-10-28): Docker Compose uses `postgres:18`, matching the locally installed PostgreSQL 18.1 binaries. Worker uses sync SQLAlchemy/psycopg to avoid Windows asyncio event-loop issues with psycopg async.
 
 
@@ -286,6 +287,14 @@ M8 done and committed (2026-10-29). All planned milestones (M0-M8) are done; see
 - `docker compose up --build` on a clean volume (separate project, ports 5442/8300/3300, then `down -v`): migrate exited 0 (`Running upgrade -> 0001`), api healthy, web healthy; a run launched from the browser was executed by the worker container: COMPLETED, objective 73.800. First build attempt failed in `npm ci` (transient, during parallel builds); the rebuild passed.
 - CI YAML parsed with `yaml.safe_load`; not run on GitHub.
 
+2026-10-29 (deployment guide, after M8):
+- Production override run locally (`-p tqprod`, `SITE_ADDRESS=:80`, host port 8088): all services up; only Caddy publishes ports. curl: page and API 401 without/with wrong password, 200 with it; `/api/v1/ready` ok; a qpso_hybrid run submitted through Caddy COMPLETED (objective 73.8) with SSE events queued/started/progress/completed/end through the proxy.
+- Browser (Playwright with HTTP credentials): all requests to localhost:8088 only; import, SA run to COMPLETED with live events, still there after reload. Web bundle has no `localhost:8000`.
+- `down` + `up -d` kept the runs; `pg_dump --format=custom` restored into a fresh DB with equal counts (2 runs, 8 events); in-place `pg_restore --clean --if-exists` with api/worker stopped exited 0 and the API came back with the runs.
+- `docker buildx build --platform linux/arm64 backend` (QEMU) succeeded; on it: `aarch64 9.15.6755 2.5.4 3.3.6` (OR-Tools, NumPy, psycopg) and an OR-Tools routing solve returned the correct tour cost 15.
+- `docker compose up --wait` exits non-zero because the worker has no healthcheck (by design); the guide does not use `--wait`.
+- Not verified: a real Oracle VM, Let's Encrypt on a public domain, DuckDNS, Cloudflare quick tunnel, the frontend image on arm64 (node:22-alpine is multi-arch; not built).
+
 ## Definition of Done walk (SPEC_FULL section 20, 2026-10-29)
 Functionality:
 - Starts via documented workflow: yes (README Docker quick start, verified from a clean volume).
@@ -308,6 +317,7 @@ Engineering quality:
 Not done / partial: "improve performance" was limited to bounded limits and the existing throttling; no profiling pass or larger-instance benchmark campaign. Mobile/small screens not tested on a device.
 
 ## Known defects and open items
+- Deployment: guide verified locally only (see 2026-10-29 deployment entry); no app-level accounts, the site-wide Caddy password is the only access control.
 - M8: CI never run on GitHub. No performance profiling; QPSO local search still dominates runtime (M3). Small-screen layouts untested on devices. Screenshot review at 1440x900 only. The Compose stack on API 8200 / web 3200 used during M8 may still be running (`docker compose down` to stop; keep `db` for tests).
 - M7: simulation sessions are in-memory (single API process, lost on restart; D27). No service time at stops (arrival = service). Customers are never reassigned between vehicles during replanning (deliberate, D29). Replanning uses its own exact/heuristic ordering, not the QPSO/SA/OR-Tools optimizers.
 - M6: no Playwright E2E 5 (simulation, M7) or 6 (export metadata vs stored result, M8). Studio has no undo; multiple end depots per vehicle are not editable in the Studio (the API supports them). The run history table has no objective column (results are fetched per selected run). Screenshots were reviewed at 1440x900 only.

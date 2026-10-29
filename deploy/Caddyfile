@@ -1,0 +1,21 @@
+# TRAFIQON public entry point (used by docker-compose.prod.yml).
+# One origin: /api/* goes to the API, everything else to the web app, so the browser never
+# needs CORS and the password prompt covers the API and its SSE streams too.
+# SITE_ADDRESS is a domain (automatic HTTPS from Let's Encrypt) or ":80" for plain HTTP.
+{$SITE_ADDRESS} {
+	basic_auth {
+		{$BASIC_AUTH_USER} {$BASIC_AUTH_HASH}
+	}
+
+	handle /api/* {
+		# Run progress is Server-Sent Events: pass every chunk through immediately.
+		reverse_proxy api:8000 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		encode zstd gzip
+		reverse_proxy web:3000
+	}
+}
