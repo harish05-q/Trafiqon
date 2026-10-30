@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="t d">
+  <title id="t">TRAFIQON</title>
+  <desc id="d">Animated banner: vehicles travelling a road graph. Transportation optimization and simulation workbench for capacity-constrained vehicle routing.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070b18"/>
+      <stop offset="1" stop-color="#121c40"/>
+    </linearGradient>
+    <linearGradient id="ttl" x1="0" y1="0" x2="1" y2="0" spreadMethod="reflect">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="0.5" stop-color="#818cf8"/>
+      <stop offset="1" stop-color="#f472b6"/>
+      <animateTransform attributeName="gradientTransform" type="translate" from="-0.5 0" to="0.5 0" dur="6s" repeatCount="indefinite"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.75" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#6366f1" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+    <path id="route1" d="M700 250 L700 190 L820 190 L820 110 L960 110 L960 200 L1100 200 L1100 80"/>
+    <path id="route2" d="M640 70 L760 70 L760 150 L900 150 L900 260 L1040 260"/>
+  </defs>
+
+  <rect width="1200" height="320" rx="18" fill="url(#bg)"/>
+  <rect width="1200" height="320" rx="18" fill="url(#glow)"/>
+
+  <!-- road grid -->
+  <g stroke="#3b4a7a" stroke-width="1" opacity="0.35">
+    <path d="M600 40H1160M600 110H1160M600 190H1160M600 260H1160"/>
+    <path d="M640 20V300M760 20V300M900 20V300M1040 20V300M1100 20V300"/>
+  </g>
+
+  <!-- highlighted route with flowing dashes -->
+  <use href="#route1" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linejoin="round" stroke-dasharray="10 10" opacity="0.9">
+    <animate attributeName="stroke-dashoffset" from="0" to="-80" dur="3s" repeatCount="indefinite"/>
+  </use>
+  <use href="#route2" fill="none" stroke="#f472b6" stroke-width="3" stroke-linejoin="round" stroke-dasharray="10 10" opacity="0.9">
+    <animate attributeName="stroke-dashoffset" from="0" to="-80" dur="4s" repeatCount="indefinite"/>
+  </use>
+
+  <!-- closed road (incident) -->
+  <g>
+    <path d="M900 150V260" stroke="#ef4444" stroke-width="4" opacity="0.0">
+      <animate attributeName="opacity" values="0;0;0.9;0.9;0" keyTimes="0;0.4;0.5;0.8;1" dur="9s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <!-- vehicles -->
+  <g>
+    <circle r="9" fill="#22d3ee" filter="url(#blur)"/>
+    <circle r="5" fill="#ffffff"/>
+    <animateMotion dur="7s" repeatCount="indefinite" rotate="auto"><mpath href="#route1"/></animateMotion>
+  </g>
+  <g>
+    <circle r="9" fill="#f472b6" filter="url(#blur)"/>
+    <circle r="5" fill="#ffffff"/>
+    <animateMotion dur="9s" repeatCount="indefinite"><mpath href="#route2"/></animateMotion>
+  </g>
+
+  <!-- nodes -->
+  <g fill="#0b1020" stroke="#a5b4fc" stroke-width="2">
+    <circle cx="700" cy="190" r="6"/>
+    <circle cx="820" cy="190" r="6"/>
+    <circle cx="820" cy="110" r="6"/>
+    <circle cx="960" cy="110" r="6"/>
+    <circle cx="960" cy="200" r="6"/>
+    <circle cx="1100" cy="200" r="6"/>
+    <circle cx="760" cy="150" r="6"/>
+    <circle cx="900" cy="150" r="6"/>
+    <circle cx="1040" cy="260" r="6"/>
+  </g>
+  <!-- depot + customers pulse -->
+  <circle cx="700" cy="250" r="10" fill="#fbbf24">
+    <animate attributeName="r" values="10;14;10" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <g fill="#34d399">
+    <circle cx="1100" cy="80" r="6"><animate attributeName="r" values="6;9;6" dur="2.4s" repeatCount="indefinite"/></circle>
+    <circle cx="640" cy="70" r="6"><animate attributeName="r" values="6;9;6" dur="2.8s" repeatCount="indefinite"/></circle>
+    <circle cx="1040" cy="260" r="6"><animate attributeName="r" values="6;9;6" dur="2.2s" repeatCount="indefinite"/></circle>
+  </g>
+
+  <!-- title -->
+  <text x="64" y="140" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="88" font-weight="800" letter-spacing="10" fill="url(#ttl)">TRAFIQON</text>
+  <text x="68" y="185" font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="22" fill="#c7d2fe">Transportation optimization &amp; simulation workbench</text>
+
+  <!-- rotating taglines -->
+  <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="19" fill="#67e8f9">
+    <text x="68" y="238">› directed, capacity-constrained CVRP on a road graph
+      <animate attributeName="opacity" values="1;1;0;0;1" keyTimes="0;0.30;0.33;0.97;1" dur="9s" repeatCount="indefinite"/>
+    </text>
+    <text x="68" y="238" opacity="0">› OR-Tools  ·  Simulated Annealing  ·  QPSO-inspired hybrid
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.30;0.33;0.63;0.66;1" dur="9s" repeatCount="indefinite"/>
+    </text>
+    <text x="68" y="238" opacity="0">› dynamic traffic  ·  incidents  ·  live replanning
+      <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.63;0.66;0.96;0.99;1" dur="9s" repeatCount="indefinite"/>
+    </text>
+  </g>
+
+  <!-- legend -->
+  <g font-family="'Segoe UI',Helvetica,Arial,sans-serif" font-size="13" fill="#94a3b8">
+    <circle cx="70" cy="285" r="5" fill="#fbbf24"/><text x="82" y="290">depot</text>
+    <circle cx="140" cy="285" r="5" fill="#34d399"/><text x="152" y="290">customer</text>
+    <rect x="232" y="283" width="22" height="4" rx="2" fill="#22d3ee"/><text x="262" y="290">route</text>
+    <rect x="312" y="283" width="22" height="4" rx="2" fill="#ef4444"/><text x="342" y="290">closed road</text>
+  </g>
+</svg>
