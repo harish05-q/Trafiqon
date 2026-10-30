@@ -123,6 +123,7 @@ M8 done and committed (2026-10-29). All planned milestones (M0-M8) are done; see
 - D35 (2026-10-29): Scrollable workspace panels are focusable (`tabIndex=0` + aria-label) so keyboard users can scroll them (WCAG 2.1.1, axe scrollable-region-focusable). The keyboard E2E accepts either the token outline or the shadcn focus ring as the visible focus indicator. Map nodes/vehicle markers with an aria-label get `role="img"`.
 - D36 (2026-10-29): The axe audit excludes only React Flow's attribution link (third-party). Audits run on the production build with real data, including a mid-simulation state.
 - D37 (2026-10-29): Free public deployment = one Oracle Cloud Always Free Ampere A1 VM running the whole Compose stack, because the worker must run continuously and simulation sessions need one long-lived API process (free PaaS tiers sleep or lack workers). `docker-compose.prod.yml` + `deploy/Caddyfile`: only Caddy is published (automatic HTTPS, basic auth for the whole site, since the app has no accounts), DB password from `deploy/.env`, the web app built with an empty API base URL so it calls `/api/...` on its own origin (no CORS, auth covers the API and SSE), log rotation. Guide: `docs/deployment.md`.
+- D38 (2026-10-30): Deployment target changed from Oracle Always Free to AWS EC2 on Free plan credits (the user has no card for Oracle; has an AWS account with USD 100 credits). `t3.small` (Free-plan eligible, 2 vCPU/2 GiB, x86 = the path tested end to end), 20 GiB gp3, Elastic IP, credit specification Standard (T3 defaults to Unlimited, surplus billed), 2 GiB swap, budget alert with credits excluded. Sizing from measurements (below). Estimated ~USD 20/month 24/7 at US East rates (estimate, not measured billing). The Free plan ends after 6 months or when credits run out and the account then closes, so the guide stresses off-server backups. Same compose override and Caddyfile as D37.
 - D4 (2026-10-28): Docker Compose uses `postgres:18`, matching the locally installed PostgreSQL 18.1 binaries. Worker uses sync SQLAlchemy/psycopg to avoid Windows asyncio event-loop issues with psycopg async.
 
 
@@ -295,6 +296,13 @@ M8 done and committed (2026-10-29). All planned milestones (M0-M8) are done; see
 - `docker compose up --wait` exits non-zero because the worker has no healthcheck (by design); the guide does not use `--wait`.
 - Not verified: a real Oracle VM, Let's Encrypt on a public domain, DuckDNS, Cloudflare quick tunnel, the frontend image on arm64 (node:22-alpine is multi-arch; not built).
 
+2026-10-30 (AWS deployment sizing):
+- Prod stack (`-p tqprod`) idle: caddy 12, web 45, worker 67, api 86, db 72 MiB. Under load (9 runs: qpso_hybrid 150 iterations, ortools_cvrp, SA 200k on all three built-ins, all COMPLETED; then a simulation session) peaks: api 102, db 84, worker 74, web 41, caddy 13 MiB (sum 313 MiB). First simulation request failed with a validation error because the test omitted `scenario_version_id`; retried correctly, created.
+- Web build in `node:22-alpine` with `--memory=1536m --memory-swap=1536m --cpus=2`: `Compiled successfully`, max RSS 958788 kB, 58 s.
+- Image sizes: backend 1.5 GB, web 340 MB, postgres:18 644 MB, caddy 82.8 MB.
+- AWS facts (Free plan terms, eligible types, IPv4 USD 0.005/h, T3 Unlimited default, USD 0.05/vCPU-h surplus) read from AWS pages on 2026-10-30; regional instance prices could not be read from the dynamic pricing pages, so the guide's cost table is an estimate.
+- `git status`: local main is ahead 1 / behind 4 of origin (README and assets edited on GitHub); must be merged before the server can clone the deployment files. Not merged (user's call).
+
 ## Definition of Done walk (SPEC_FULL section 20, 2026-10-29)
 Functionality:
 - Starts via documented workflow: yes (README Docker quick start, verified from a clean volume).
@@ -317,7 +325,7 @@ Engineering quality:
 Not done / partial: "improve performance" was limited to bounded limits and the existing throttling; no profiling pass or larger-instance benchmark campaign. Mobile/small screens not tested on a device.
 
 ## Known defects and open items
-- Deployment: guide verified locally only (see 2026-10-29 deployment entry); no app-level accounts, the site-wide Caddy password is the only access control.
+- Deployment (AWS EC2): not run on a real instance; console steps and prices unverified here. Guide verified locally only (see 2026-10-29 deployment entry); no app-level accounts, the site-wide Caddy password is the only access control.
 - M8: CI never run on GitHub. No performance profiling; QPSO local search still dominates runtime (M3). Small-screen layouts untested on devices. Screenshot review at 1440x900 only. The Compose stack on API 8200 / web 3200 used during M8 may still be running (`docker compose down` to stop; keep `db` for tests).
 - M7: simulation sessions are in-memory (single API process, lost on restart; D27). No service time at stops (arrival = service). Customers are never reassigned between vehicles during replanning (deliberate, D29). Replanning uses its own exact/heuristic ordering, not the QPSO/SA/OR-Tools optimizers.
 - M6: no Playwright E2E 5 (simulation, M7) or 6 (export metadata vs stored result, M8). Studio has no undo; multiple end depots per vehicle are not editable in the Studio (the API supports them). The run history table has no objective column (results are fetched per selected run). Screenshots were reviewed at 1440x900 only.

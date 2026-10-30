@@ -65,7 +65,7 @@ Adapt to the existing repo, but keep these logical boundaries.
 - Web dev server: `cd frontend && npm run dev` (API URL from `NEXT_PUBLIC_API_BASE_URL`, default http://localhost:8000)
 - E2E: `cd frontend && npx playwright test` (needs `docker compose up -d db`; starts API :8100, a worker, prod build :3100; uses DB `trafiqon_e2e`; workflows 1-6, axe a11y audit, keyboard test, screenshots)
 - Stack: `docker compose up --build` (db, one-shot migrate, api :8000, worker, web :3000; ports via `DB_PORT`/`API_PORT`/`WEB_PORT`, see `.env.example`)
-- Public deploy: `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file deploy/.env up -d --build` (Caddy HTTPS + password; guide in `docs/deployment.md`)
+- Public deploy: `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file deploy/.env up -d --build` (Caddy HTTPS + password; AWS EC2 guide in `docs/deployment.md`)
 
 ## End-of-milestone report format
 Implemented / commands actually run / actual results / known defects / decisions / next milestone + acceptance criteria.

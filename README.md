@@ -59,7 +59,7 @@ Ports are configurable. The browser calls the API directly, so set its public UR
 API_PORT=8200 WEB_PORT=3200 PUBLIC_API_URL=http://localhost:8200 PUBLIC_WEB_URL=http://localhost:3200 docker compose up --build
 ```
 
-This local stack has no password and publishes the database port. To put TRAFIQON on the internet (free, one VM, HTTPS, password, same-origin API), use the production override described in [`docs/deployment.md`](docs/deployment.md).
+This local stack has no password and publishes the database port. To put TRAFIQON on the internet (one AWS EC2 VM on Free plan credits, HTTPS, password, same-origin API), use the production override described in [`docs/deployment.md`](docs/deployment.md).
 
 ## Local development
 Prerequisites:
@@ -117,7 +117,7 @@ All settings come from environment variables; see [`.env.example`](.env.example)
 | [`docs/simulation.md`](docs/simulation.md) | Clock, vehicle state, incidents, replanning |
 | [`docs/api_contracts.md`](docs/api_contracts.md) | Endpoints, errors, SSE events, run lifecycle |
 | [`docs/architecture.md`](docs/architecture.md) | Components, data flow, infrastructure decisions |
-| [`docs/deployment.md`](docs/deployment.md) | Free public deployment: Oracle Cloud Always Free VM, Caddy HTTPS + password, backups, troubleshooting |
+| [`docs/deployment.md`](docs/deployment.md) | Public deployment on AWS EC2 (`t3.small`, Free plan credits): Caddy HTTPS + password, budgets, backups, troubleshooting |
 | [`docs/interview_guide.md`](docs/interview_guide.md) | Decisions, trade-offs, failure modes, likely questions |
 | [`STATUS.md`](STATUS.md) | Milestones, decisions (D1–D36), commands actually run, known defects |
 
